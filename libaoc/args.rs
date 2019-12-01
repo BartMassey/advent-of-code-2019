@@ -11,15 +11,25 @@
 
 use std;
 
+/// Which part of the day's problem to solve.
+pub enum Part {
+    Part1,
+    Part2,
+}
+pub use Part::*;
+
 /// Find out whether we're handling part 1 or part 2.
 /// Fail if extra arguments are passed.
-pub fn get_part() -> usize {
+pub fn get_part() -> Part {
     let mut argv = std::env::args();
     assert!(argv.len() == 2);
     let part = argv.nth(1).expect("get_part: bad part argument")
                .parse().expect("get_part: part argument is not a number");
-    assert!(part == 1 || part == 2);
-    part
+    match part {
+        1 => Part1,
+        2 => Part2,
+        _ => panic!("unknown part argument {}", part),
+    }
 }
 
 /// Find out whether we're handling part 1 or part 2, and what
