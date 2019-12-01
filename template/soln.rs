@@ -7,5 +7,5 @@
 
 pub fn main() {
     let part = aoc::get_part();
-    assert!(part == 1);
+    assert!(part == aoc::Part1);
 }
