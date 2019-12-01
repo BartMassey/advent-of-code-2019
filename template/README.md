@@ -3,8 +3,8 @@ Bart Massey
 
 Run with
 
-    cargo run --release -- 1 <input.txt
-    cargo run --release -- 2 <input.txt
+    cargo run --release 1 <input.txt
+    cargo run --release 2 <input.txt
 
 ---
 
