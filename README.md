@@ -50,8 +50,11 @@ webpage and then
 
 to get markdown into the problem files for posterity.
 
-You can get times for all parts of all days with "sh
-times.sh". This also verifies that everything runs.
+You can get times for all parts of all days with `sh
+times.sh` (will build before timing). This also verifies
+that everything runs.  You can use `sh clean.sh` to run
+`cargo clean` in the day directories — Rust `target`
+directories are huge.
 
 These solutions deserve a much more thorough top-level
 description than I usually have the energy to
