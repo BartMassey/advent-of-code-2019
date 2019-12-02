@@ -12,6 +12,7 @@
 use std;
 
 /// Which part of the day's problem to solve.
+#[derive(Debug, PartialEq, Eq)]
 pub enum Part {
     Part1,
     Part2,
