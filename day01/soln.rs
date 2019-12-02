@@ -8,16 +8,13 @@
 /// Read the masses from stdin and return an iterator over
 /// them. We use `i64` because it is sufficiently large and
 /// the calculation in `calc_fuel_recur()` may go negative.
-fn get_masses() -> impl Iterator<Item=i64> {
-    aoc::input_lines()
-        .map(|m| m.parse::<i64>().unwrap())
+fn get_masses() -> impl Iterator<Item = i64> {
+    aoc::input_lines().map(|m| m.parse::<i64>().unwrap())
 }
 
 /// Calculate the total fuel consumed by the given masses.
-fn calc_total_fuel(masses: impl Iterator<Item=i64>) -> i64 {
-    masses
-        .map(|m| m / 3 - 2)
-        .sum()
+fn calc_total_fuel(masses: impl Iterator<Item = i64>) -> i64 {
+    masses.map(|m| m / 3 - 2).sum()
 }
 
 /// Do the recurrent fuel calculation for a single mass.
@@ -42,10 +39,8 @@ fn test_calc_fuel_recur() {
 
 /// Calculate the total recurrent fuel cost for the given
 /// masses.
-fn calc_total_fuel_recur(masses: impl Iterator<Item=i64>) -> i64 {
-    masses
-        .map(calc_fuel_recur)
-        .sum()
+fn calc_total_fuel_recur(masses: impl Iterator<Item = i64>) -> i64 {
+    masses.map(calc_fuel_recur).sum()
 }
 
 /// Run the problem.
