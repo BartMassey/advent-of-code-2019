@@ -39,20 +39,11 @@ impl Intcode {
             loc
         };
 
-        // We represent the operators as functions.  The
-        // definitions are a bunch of boilerplate.  Let's
-        // fix that by using a macro that takes an opcode
-        // name and value and performs the operation.
-        macro_rules! mkop {
-            ($name:ident, $op:tt) => {
-                fn $name(val1: usize, val2: usize) -> usize {
-                    val1 $op val2
-                }
-            };
-        }
-
-        mkop!(add, +);
-        mkop!(mul, *);
+        // Our opcodes are implemented by functions that
+        // perform the operations.
+        type Op = &'static dyn Fn(usize, usize) -> usize;
+        let add: Op = &|a, b| a + b;
+        let mul: Op = &|a, b| a * b;
 
         // The actual emulator loop tries to be careful in
         // its checking.
