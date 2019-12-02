@@ -43,7 +43,7 @@ pub fn choose<T>(source: &BTreeSet<T>, n: usize)
         return r;
     };
     let mut es = source.clone();
-    for e in source.into_iter().cloned() {
+    for e in source.iter().cloned() {
         es.remove(&e);
         let cs = *Box::new(choose(&es, n-1));
         for mut c in cs {
@@ -60,7 +60,7 @@ pub fn choose<T>(source: &BTreeSet<T>, n: usize)
 pub fn choose_le<T>(source: &BTreeSet<T>, n: usize)
   -> BTreeSet<BTreeSet<T>> where T: Clone + Ord {
     let mut r = choose(source, 0);
-    for i in 1..n+1 {
+    for i in 1..=n {
         let s = choose(source, i);
         r = r.union(&s).cloned().collect();
     };

@@ -21,8 +21,8 @@
 #[inline]
 pub fn popcount<T: Into<u64>>(x0: T) -> usize {
     let mut x: u64 = x0.into();
-    let m1 = 0x5555555555555555;
-    let m2 = 0x0303030303030303;
+    let m1 = 0x5555_5555_5555_5555;
+    let m2 = 0x0303_0303_0303_0303;
     x -= (x >> 1) & m1;
     x = (x & m2) + ((x >> 2) & m2) + ((x >> 4) & m2) + ((x >> 6) & m2);
     x += x >> 8;
