@@ -14,7 +14,7 @@
 const TRACE: bool = false;
 
 use std::io::Read;
-use lines::InputLines;
+use crate::lines::InputLines;
 
 /// Operand types.
 #[derive(Clone, Copy)]
