@@ -25,6 +25,9 @@ there are occasional unit tests. I regard passing both parts
 of a day's problem as strong validation, although I've been
 wrong about this in the past. More tests should get written.
 
+These programs are not production-quality: it is considered
+acceptable to panic on erroneous input.
+
 The goals of these solutions are to:
 
 * Provide correct solutions with reasonable runtimes.
