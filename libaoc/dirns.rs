@@ -20,10 +20,28 @@
 //! assert_eq!(neighbors, vec![(2, 1), (1, 0)]);
 //! ```
 
+/// Symbolic direction constants. It is unfortunate that
+/// these need to be matched to DIRNS below.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Dirn {
+    Up = 0,
+    Down = 1,
+    Left = 2,
+    Right = 3,
+}
 
 /// The cardinal directions: up, down, left, right in
 /// an x-y coordinate system where increasing y is down.
 pub static DIRNS: [(isize, isize);4] = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+
+impl Dirn {
+
+    /// Displacement resulting from a step in the given
+    /// direction.
+    pub fn disp(self) -> (isize, isize) {
+        DIRNS[self as usize]
+    }
+}
 
 /// Type of unsigned coordinates.
 pub type Point = (usize, usize);
