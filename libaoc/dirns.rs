@@ -1,9 +1,9 @@
 // Copyright © 2016 Bart Massey
 // This program is licensed under the "MIT License".
-// Please see the file COPYING in this distribution
+// Please see the file LICENSE in this distribution
 // for license terms.
 
-//! Directions iterator for Advent of Code 2016 solutions.
+//! Directions management for Advent of Code solutions.
 //!
 //! To use this, make a new `GridBox` to set clipping bounds,
 //! then call the `neighbors()` method of the `ClipBox` to get
@@ -32,19 +32,18 @@ pub enum Dirn {
 
 /// The cardinal directions: up, down, left, right in
 /// an x-y coordinate system where increasing y is down.
-pub static DIRNS: [(isize, isize); 4] =
-    [(0, -1), (0, 1), (-1, 0), (1, 0)];
+pub static DIRNS: [(i64, i64); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)];
 
 impl Dirn {
     /// Displacement resulting from a step in the given
     /// direction.
-    pub fn disp(self) -> (isize, isize) {
+    pub fn disp(self) -> (i64, i64) {
         DIRNS[self as usize]
     }
 }
 
-/// Type of unsigned coordinates.
-pub type Point = (usize, usize);
+/// Type of coordinates.
+pub type Point = (i64, i64);
 
 /// Description of the grid, for possible clipping.
 #[derive(Copy, Clone)]
@@ -60,7 +59,7 @@ use self::GridBox::*;
 impl GridBox {
     /// Create a clip box for neighbor calculations.
     #[allow(dead_code)]
-    pub fn new(x_size: usize, y_size: usize) -> GridBox {
+    pub fn new(x_size: i64, y_size: i64) -> GridBox {
         ClipBox((x_size, y_size))
     }
 
@@ -84,24 +83,20 @@ impl GridBox {
     /// Return the source location adjusted by the given offset
     /// iff the dest location is in-bounds. This is useful when
     /// "manual" clipping is needed.
-    pub fn clip(
-        &self,
-        loc: Point,
-        off: (isize, isize),
-    ) -> Option<Point> {
+    pub fn clip(&self, loc: Point, off: (i64, i64)) -> Option<Point> {
         let (x, y) = loc;
         let (dx, dy) = off;
-        let nx = x as isize + dx;
-        let ny = y as isize + dy;
+        let nx = x + dx;
+        let ny = y + dy;
         if nx < 0 || ny < 0 {
             return None;
         }
         if let ClipBox((x_size, y_size)) = *self {
-            if nx >= x_size as isize || ny >= y_size as isize {
+            if nx >= x_size as i64 || ny >= y_size as i64 {
                 return None;
             }
         };
-        Some((nx as usize, ny as usize))
+        Some((nx, ny))
     }
 }
 
@@ -113,7 +108,7 @@ pub struct Neighbors {
     /// Source location.
     loc: Point,
     /// Iterator for cardinal directions.
-    dirns: Box<dyn Iterator<Item = &'static (isize, isize)>>,
+    dirns: Box<dyn Iterator<Item = &'static (i64, i64)>>,
 }
 
 impl Neighbors {
@@ -152,8 +147,8 @@ impl Iterator for Neighbors {
 /// The ["Manhattan Distance"][1] between two points.
 ///
 /// [1]: http://en.wikipedia.org/wiki/Taxicab_geometry
-pub fn manhattan_distance(p1: Point, p2: Point) -> usize {
-    let dx = (p1.0 as isize - p2.0 as isize).abs();
-    let dy = (p1.1 as isize - p2.1 as isize).abs();
-    (dx + dy) as usize
+pub fn manhattan_distance((x1, y1): Point, (x2, y2): Point) -> u64 {
+    let dx = (x1 - x2).abs();
+    let dy = (y1 - y2).abs();
+    (dx + dy) as u64
 }
