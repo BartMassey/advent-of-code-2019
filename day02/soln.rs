@@ -44,6 +44,7 @@ impl Intcode {
         type Op = &'static dyn Fn(usize, usize) -> usize;
         let add: Op = &|a, b| a + b;
         let mul: Op = &|a, b| a * b;
+        let ops = [add, mul];
 
         // The actual emulator loop tries to be careful in
         // its checking.
@@ -52,15 +53,15 @@ impl Intcode {
             if ip + 3 > nprog {
                 panic!("program ran off end");
             }
-            let opcode = match prog[ip] {
-                1 => add,
-                2 => mul,
-                opcode => panic!("illegal opcode {} at {}", opcode, ip),
-            };
+            let opcode = prog[ip];
+            if opcode < 1 || opcode > ops.len() + 1 {
+                panic!("illegal opcode {} at {}", opcode, ip);
+            }
+            let op = ops[opcode - 1];
             let src1 = check_range(prog[ip + 1]);
             let src2 = check_range(prog[ip + 2]);
             let dst = check_range(prog[ip + 3]);
-            prog[dst] = opcode(prog[src1], prog[src2]);
+            prog[dst] = op(prog[src1], prog[src2]);
             ip += 4;
         }
     }
