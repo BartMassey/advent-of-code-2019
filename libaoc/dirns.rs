@@ -13,7 +13,7 @@
 //!
 //! ```rust
 //! use aoc::dirns::*;
-//! 
+//!
 //! let clip_box = GridBox::new(3, 4);
 //! let neighbors = clip_box.neighbors((2, 0))
 //!                 .collect::<Vec<_>>();
@@ -32,10 +32,10 @@ pub enum Dirn {
 
 /// The cardinal directions: up, down, left, right in
 /// an x-y coordinate system where increasing y is down.
-pub static DIRNS: [(isize, isize);4] = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+pub static DIRNS: [(isize, isize); 4] =
+    [(0, -1), (0, 1), (-1, 0), (1, 0)];
 
 impl Dirn {
-
     /// Displacement resulting from a step in the given
     /// direction.
     pub fn disp(self) -> (isize, isize) {
@@ -52,13 +52,12 @@ pub enum GridBox {
     /// Grid is clipped on bottom and right.
     ClipBox(Point),
     /// Grid is unclipped.
-    Unclipped
+    Unclipped,
 }
 
 use self::GridBox::*;
 
 impl GridBox {
-
     /// Create a clip box for neighbor calculations.
     #[allow(dead_code)]
     pub fn new(x_size: usize, y_size: usize) -> GridBox {
@@ -85,7 +84,11 @@ impl GridBox {
     /// Return the source location adjusted by the given offset
     /// iff the dest location is in-bounds. This is useful when
     /// "manual" clipping is needed.
-    pub fn clip(&self, loc: Point, off: (isize, isize)) -> Option<Point> {
+    pub fn clip(
+        &self,
+        loc: Point,
+        off: (isize, isize),
+    ) -> Option<Point> {
         let (x, y) = loc;
         let (dx, dy) = off;
         let nx = x as isize + dx;
@@ -110,18 +113,17 @@ pub struct Neighbors {
     /// Source location.
     loc: Point,
     /// Iterator for cardinal directions.
-    dirns: Box<dyn Iterator<Item=&'static (isize, isize)>>
+    dirns: Box<dyn Iterator<Item = &'static (isize, isize)>>,
 }
 
 impl Neighbors {
-
     /// Return an iterator over the neighbors of
     /// the given grid box starting at the given location.
     pub fn new(grid_box: GridBox, location: Point) -> Self {
         Neighbors {
             bounds: grid_box,
             loc: location,
-            dirns: Box::new(DIRNS.iter())
+            dirns: Box::new(DIRNS.iter()),
         }
     }
 }
@@ -138,7 +140,7 @@ impl Iterator for Neighbors {
                     if let Some(n) = self.bounds.clip(self.loc, d) {
                         return Some(n);
                     }
-                },
+                }
                 None => {
                     return None;
                 }

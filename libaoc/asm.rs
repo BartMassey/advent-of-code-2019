@@ -13,8 +13,8 @@
 /// Turn on to trace execution.
 const TRACE: bool = false;
 
-use std::io::Read;
 use crate::lines::InputLines;
+use std::io::Read;
 
 /// Operand types.
 #[derive(Clone, Copy)]
@@ -22,7 +22,7 @@ pub enum Opnd {
     /// Register.
     Reg(usize),
     /// Constant value.
-    Const(isize)
+    Const(isize),
 }
 
 use self::Opnd::*;
@@ -41,11 +41,10 @@ pub enum Insn {
     /// operand.
     Tgl(Opnd),
     /// Output the given value to the output vector.
-    Out(Opnd)
+    Out(Opnd),
 }
 
 use self::Insn::*;
-
 
 /// Parse an operand description and return its operand.
 fn parse_opnd(opnd: &str) -> Opnd {
@@ -69,31 +68,28 @@ pub struct ExecState {
     /// Register contents.
     pub regs: Vec<isize>,
     /// List of outputs.
-    pub out: Vec<isize>
+    pub out: Vec<isize>,
 }
 
 impl ExecState {
-
     /// Create a new initial state for a four-register machine.
     pub fn new() -> ExecState {
         ExecState {
             pc: 0,
             regs: vec![0, 0, 0, 0],
-            out: Vec::new()
+            out: Vec::new(),
         }
     }
 }
-
 
 /// Return the value of the given operand in the given
 /// state.
 fn eval(state: &ExecState, opnd: Opnd) -> isize {
     match opnd {
         Reg(r) => state.regs[r],
-        Const(c) => c
+        Const(c) => c,
     }
 }
-
 
 /// Return a string describing the given operand.
 fn rcs(opnd: Opnd) -> String {
@@ -107,7 +103,6 @@ fn rcs(opnd: Opnd) -> String {
     }
 }
 
-
 /// Assemble an Assembunny program, returning its
 /// instructions.  The input source `lines` are given by an
 /// iterator of type `aoc::lines::InputLines`.
@@ -116,36 +111,35 @@ pub fn asm<T: Read>(lines: &mut InputLines<T>) -> Vec<Insn> {
     let mut insns: Vec<Insn> = Vec::new();
     for target in lines {
         let words = target.split_whitespace().collect::<Vec<&str>>();
-        let insn =
-            match words[0] {
-                "cpy" => {
-                    assert!(words.len() == 3);
-                    Cpy(parse_opnd(words[1]), parse_opnd(words[2]))
-                },
-                "inc" => {
-                    assert!(words.len() == 2);
-                    Add(1, parse_opnd(words[1]))
-                },
-                "dec" => {
-                    assert!(words.len() == 2);
-                    Add(-1, parse_opnd(words[1]))
-                },
-                "jnz" => {
-                    assert!(words.len() == 3);
-                    JNZ(parse_opnd(words[1]), parse_opnd(words[2]))
-                },
-                "tgl" => {
-                    assert!(words.len() == 2);
-                    Tgl(parse_opnd(words[1]))
-                },
-                "out" => {
-                    assert!(words.len() == 2);
-                    Out(parse_opnd(words[1]))
-                },
-                _ => panic!(format!("unrecognized insn {}", words[0]))
-            };
+        let insn = match words[0] {
+            "cpy" => {
+                assert!(words.len() == 3);
+                Cpy(parse_opnd(words[1]), parse_opnd(words[2]))
+            }
+            "inc" => {
+                assert!(words.len() == 2);
+                Add(1, parse_opnd(words[1]))
+            }
+            "dec" => {
+                assert!(words.len() == 2);
+                Add(-1, parse_opnd(words[1]))
+            }
+            "jnz" => {
+                assert!(words.len() == 3);
+                JNZ(parse_opnd(words[1]), parse_opnd(words[2]))
+            }
+            "tgl" => {
+                assert!(words.len() == 2);
+                Tgl(parse_opnd(words[1]))
+            }
+            "out" => {
+                assert!(words.len() == 2);
+                Out(parse_opnd(words[1]))
+            }
+            _ => panic!(format!("unrecognized insn {}", words[0])),
+        };
         insns.push(insn);
-    };
+    }
     insns
 }
 
@@ -155,31 +149,45 @@ pub fn step(insns: &mut Vec<Insn>, state: &mut ExecState) {
     match insns[state.pc] {
         Cpy(rc1, Reg(r2)) => {
             if TRACE {
-                println!("{}: cpy {} {}", state.pc, rcs(rc1), rcs(Reg(r2)));
+                println!(
+                    "{}: cpy {} {}",
+                    state.pc,
+                    rcs(rc1),
+                    rcs(Reg(r2))
+                );
             };
             state.regs[r2] = eval(state, rc1);
             state.pc += 1;
-        },
+        }
         Cpy(rc1, rc2) => {
             if TRACE {
-                println!("{}: cpy* {} {}", state.pc, rcs(rc1), rcs(rc2));
+                println!(
+                    "{}: cpy* {} {}",
+                    state.pc,
+                    rcs(rc1),
+                    rcs(rc2)
+                );
             };
             state.pc += 1;
-        },
+        }
         Add(cnst, Reg(reg)) => {
             if TRACE {
                 match cnst {
-                    1 => println!("{}: inc {}", state.pc, rcs(Reg(reg))),
-                    -1 => println!("{}: dec {}", state.pc, rcs(Reg(reg))),
-                    _ => panic!("invalid add")
+                    1 => {
+                        println!("{}: inc {}", state.pc, rcs(Reg(reg)))
+                    }
+                    -1 => {
+                        println!("{}: dec {}", state.pc, rcs(Reg(reg)))
+                    }
+                    _ => panic!("invalid add"),
                 }
             };
             state.regs[reg] += cnst;
             state.pc += 1;
-        },
+        }
         Add(_, _) => {
             panic!("add with const target");
-        },
+        }
         JNZ(rc1, rc2) => {
             if TRACE {
                 println!("{}: jnz {} {}", state.pc, rcs(rc1), rcs(rc2));
@@ -193,7 +201,7 @@ pub fn step(insns: &mut Vec<Insn>, state: &mut ExecState) {
                 return;
             }
             state.pc += 1;
-        },
+        }
         Tgl(rc) => {
             if TRACE {
                 println!("{}: tgl {}", state.pc, rcs(rc));
@@ -215,10 +223,10 @@ pub fn step(insns: &mut Vec<Insn>, state: &mut ExecState) {
                 Tgl(reg) => Add(1, reg),
                 Out(rc) => Add(1, rc),
                 JNZ(rc1, rc2) => Cpy(rc1, rc2),
-                Cpy(rc1, rc2) => JNZ(rc1, rc2)
+                Cpy(rc1, rc2) => JNZ(rc1, rc2),
             };
             state.pc += 1;
-        },
+        }
         Out(rc) => {
             if TRACE {
                 println!("{}: out {}", state.pc, rcs(rc));
@@ -229,4 +237,3 @@ pub fn step(insns: &mut Vec<Insn>, state: &mut ExecState) {
         }
     }
 }
-

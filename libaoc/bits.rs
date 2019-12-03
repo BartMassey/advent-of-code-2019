@@ -44,7 +44,7 @@ mod test {
         for _ in 0..64 {
             count += (x & 1) as usize;
             x >>= 1;
-        };
+        }
         count
     }
 
@@ -67,9 +67,11 @@ mod test {
             let p = popcount(x);
             let pn = popcount_naive(x);
             if p != pn {
-                panic!(format!("popcount mismatch: x={}, p={}, px={}",
-                               x, p, pn));
+                panic!(format!(
+                    "popcount mismatch: x={}, p={}, px={}",
+                    x, p, pn
+                ));
             };
-        };
+        }
     }
 }

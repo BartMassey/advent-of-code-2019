@@ -11,25 +11,26 @@
 //! a bit of boilerplate removal and isolates a whole
 //! bunch of dependencies.
 
-use std::io::*;
 use std::fs::File;
+use std::io::*;
 
 /// The `std::io::Lines` iterator, wrapped so that
 /// it will `panic!()` on failure rather than returning
 /// a `std::io::Result`.
 pub struct InputLines<T: Read> {
-    lines: Lines<BufReader<T>>
+    lines: Lines<BufReader<T>>,
 }
 
-impl <T: Read> InputLines<T> {
-
+impl<T: Read> InputLines<T> {
     /// Return the wrapped `std::io::Lines` iterator.
     pub fn new(file: T) -> Self {
-        InputLines { lines: BufReader::new(file).lines() }
+        InputLines {
+            lines: BufReader::new(file).lines(),
+        }
     }
 }
 
-impl <T: Read> Iterator for InputLines<T> {
+impl<T: Read> Iterator for InputLines<T> {
     type Item = String;
     /// Return the next line if any.
     ///
@@ -39,8 +40,10 @@ impl <T: Read> Iterator for InputLines<T> {
     /// cause a panic here.
     fn next(&mut self) -> Option<String> {
         match self.lines.next() {
-            Some(result) => Some(result.expect("could not read input line")),
-            None => None
+            Some(result) => {
+                Some(result.expect("could not read input line"))
+            }
+            None => None,
         }
     }
 }
