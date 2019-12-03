@@ -11,6 +11,7 @@ description = "Solution to Advent of Code 2019 Day 1."
 repository = "http://github.com/BartMassey/advent-of-code-2019"
 readme = "README.md"
 license = "MIT"
+edition = "2018"
 
 [[bin]]
 name = "soln"
