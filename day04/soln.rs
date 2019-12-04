@@ -17,28 +17,38 @@ pub fn main() {
         .filter(|p| {
             let digits: Vec<char> = p.to_string().chars().collect();
             let ndigits = digits.len();
-            let mut doubled = false;
-            for i in 0..ndigits {
-                if i >= ndigits - 1 {
-                    continue;
-                }
-                if digits[i] > digits[i+1] {
+            let mut matched = false;
+            for i in 0..ndigits - 1 {
+                // No descending digits.
+                if digits[i] > digits[i + 1] {
                     return false;
                 }
-                let same = || digits[i] == digits[i+1];
-                let this_doubled = match part {
-                    aoc::Part1 => same(),
+                // Digits must match.
+                if digits[i] != digits[i + 1] {
+                    continue;
+                }
+                match part {
+                    aoc::Part1 => {
+                        matched = true;
+                    }
                     aoc::Part2 => {
-                        let diff_start =
-                            || i == 0 || digits[i-1] != digits[i];
-                        let diff_end =
-                            || i >= ndigits - 2 || digits[i+1] != digits[i+2];
-                        same() && diff_start() && diff_end()
-                    },
-                };
-                doubled = doubled || this_doubled;
+                        // Match must be delimited in front.
+                        if i > 0 && digits[i - 1] == digits[i] {
+                            continue;
+                        }
+                        // Match must be delimited in back.
+                        if i == ndigits - 2 {
+                            matched = true;
+                        }
+                        if i < ndigits - 2
+                            && digits[i + 1] != digits[i + 2]
+                        {
+                            matched = true;
+                        }
+                    }
+                }
             }
-            doubled
+            matched
         })
         .count();
     println!("{}", ncands);
