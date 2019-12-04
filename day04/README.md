@@ -2,8 +2,15 @@
 Bart Massey
 
 This felt easier than some previous puzzles. My current
-solution is pretty slow and gross, so I will clean it up a
-bit.
+solution is pretty slow, so that's probably why.
+
+A much faster solution would be to take care of all the
+matching while incrementing the characters of the target
+integer directly. This would allow skipping large sections
+of the search space, and would avoid using expensive
+int-to-string conversion at each iteration. It's harder and
+more work, I think, so I'll leave it as an exercise for the
+interested reader.
 
 For some reason I am using a lot more functional-programming
 stuff in my Rust this year.
