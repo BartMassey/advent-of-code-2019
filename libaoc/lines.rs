@@ -53,6 +53,11 @@ pub fn input_lines() -> InputLines<Stdin> {
     InputLines::new(stdin())
 }
 
+/// Get a single line from `stdin`. This comes up a lot.
+pub fn input_line() -> String {
+    input_lines().next().unwrap()
+}
+
 /// Get a new iterator over lines of the file with the given
 /// filename, returning an error on failure to open the
 /// file.
