@@ -10,11 +10,18 @@
 enum Opcode {
     Add,
     Mul,
+    Input,
+    Output,
 }
 
 impl Opcode {
     fn new(code: usize) -> (Self, usize) {
-        let codes = [(Self::Add, 3), (Self::Mul, 3)];
+        let codes = [
+            (Self::Add, 3),
+            (Self::Mul, 3),
+            (Self::Input, 1),
+            (Self::Output, 1),
+        ];
         if code == 0 || code > codes.len() {
             panic!("illegal opcode {}", code);
         }
@@ -73,9 +80,30 @@ impl OpndMode {
 }
 
 #[derive(Debug, Clone)]
-pub struct Intcode(Vec<isize>);
+pub struct Intcode{
+    prog: Vec<i64>,
+    inputs: Option<Vec<i64>>,
+    outputs: Vec<i64>,
+}
 
 impl Intcode {
+    fn new(prog: Vec<i64>) -> Self {
+        Self { prog, inputs: None, outputs: Vec::new() }
+    }
+
+    /// Builder for adding user inputs to the Intcode
+    /// program before running. Can only be done once.
+    pub fn with_inputs(mut self, inputs: Vec<i64>) -> Self {
+        assert!(self.inputs.is_none());
+        self.inputs = Some(inputs);
+        self
+    }
+
+    /// View outputs from the Intcode program after running.
+    pub fn view_outputs<'a>(&'a self) -> &'a [i64] {
+        &self.outputs
+    }
+
     /// Read and parse the program from stdin in the
     /// specified format.
     pub fn read() -> Self {
@@ -88,15 +116,15 @@ impl Intcode {
             .split(',')
             .map(|w| w.parse().unwrap())
             .collect();
-        Self(prog)
+        Self::new(prog)
     }
 
     /// Run this Intcode program.
     pub fn run(&mut self) {
-        let prog = &mut self.0;
+        let prog = &mut self.prog;
         let nprog = prog.len();
 
-        let fetch = |prog: &Vec<isize>, idx, modes: &mut OpndModes| {
+        let fetch = |prog: &Vec<i64>, idx, modes: &mut OpndModes| {
             if idx > nprog {
                 panic!("fetch off program end");
             }
@@ -112,7 +140,7 @@ impl Intcode {
             }
         };
 
-        let store = |prog: &mut Vec<isize>, idx, modes: &mut OpndModes, val| {
+        let store = |prog: &mut Vec<i64>, idx, modes: &mut OpndModes, val| {
             if idx > nprog {
                 panic!("store off program end");
             }
@@ -146,24 +174,40 @@ impl Intcode {
                     let a = match op {
                         Opcode::Add => src1 + src2,
                         Opcode::Mul => src1 * src2,
+                        _ => unreachable!("wrong insn for add / mul"),
                     };
                     store(prog, ip + 3, &mut modes, a);
                     modes.end();
-                }
+                },
+                Opcode::Input => {
+                    assert_eq!(nargs, 1);
+                    let mut modes = OpndModes::new(opcode, nargs);
+                    let inputs = self.inputs.as_mut().expect("input was never provided");
+                    let input = inputs.pop().expect("input without value");
+                    store(prog, ip + 1, &mut modes, input);
+                    modes.end();
+                },
+                Opcode::Output => {
+                    assert_eq!(nargs, 1);
+                    let mut modes = OpndModes::new(opcode, nargs);
+                    let output = fetch(prog, ip + 1, &mut modes);
+                    self.outputs.push(output);
+                    modes.end();
+                },
             }
             ip += nargs + 1;
         }
     }
 
-    /// Input a "verb" and "noun" before starting the program.
-    pub fn input(&mut self, verb: isize, noun: isize) {
-        self.0[1] = verb;
-        self.0[2] = noun;
+    /// Day 2: Input a "verb" and "noun" before starting the program.
+    pub fn input(&mut self, verb: i64, noun: i64) {
+        self.prog[1] = verb;
+        self.prog[2] = noun;
     }
 
-    /// Fetch output after running the program.
-    pub fn output(&self) -> isize {
-        self.0[0]
+    /// Day 2: Fetch output after running the program.
+    pub fn output(&self) -> i64 {
+        self.prog[0]
     }
 }
 
@@ -174,7 +218,7 @@ fn test_run() {
     // In this case it gows things up trying to be clever.
     // So we tell it "no".
     #[rustfmt::skip]
-    let testcases: &[(&[isize], &[isize])] = &[
+    let testcases: &[(&[i64], &[i64])] = &[
         (
             &[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50],
             &[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
@@ -197,9 +241,9 @@ fn test_run() {
         ),
     ];
     for (init, fin) in testcases {
-        let mut init = Intcode(init.to_vec());
+        let mut init = Intcode::new(init.to_vec());
         let fin = fin.to_vec();
         init.run();
-        assert_eq!(init.0, fin);
+        assert_eq!(init.prog, fin);
     }
 }
