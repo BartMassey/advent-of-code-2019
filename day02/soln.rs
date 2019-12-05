@@ -27,7 +27,7 @@ pub fn main() {
                     // directly from the web than to try to
                     // "format" it. Sorry Clippy.
                     #[allow(clippy::unreadable_literal)]
-                    const EXPECTED_RESULT: usize = 19690720;
+                    const EXPECTED_RESULT: i64 = 19690720;
                     if result == EXPECTED_RESULT {
                         println!("{}", 100 * noun + verb);
                         return;
