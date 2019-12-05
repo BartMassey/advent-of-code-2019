@@ -1,4 +1,11 @@
-/// Intcode is this year's virtual machine.
+//! Intcode interpreter for Advent of Code 2019 solutions.
+//!
+//! This is a fairly standard pcode setup with the exception
+//! of being highly self-modifying code. Use
+//! `Intcode::read()` to load a program from `stdin`;
+//! `input()` to load input values; `run()` to run until
+//! halted; `output()` to get the output value.
+
 #[derive(Debug, Clone)]
 pub struct Intcode(Vec<usize>);
 
