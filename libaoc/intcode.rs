@@ -6,6 +6,45 @@
 //! `input()` to load input values; `run()` to run until
 //! halted; `output()` to get the output value.
 
+#[derive(Clone, Copy)]
+enum Opcode {
+    Add,
+    Mul,
+}
+
+impl Opcode {
+    fn new(code: usize) -> Self {
+        let codes = [Self::Add, Self::Mul];
+        if code == 0 || code > codes.len() {
+            panic!("illegal opcode {}", code);
+        }
+        codes[code - 1]
+    }
+}
+
+#[derive(Clone, Copy)]
+enum OpndMode {
+    Invalid,
+    Imm,
+    Pos,
+}
+
+impl Default for OpndMode {
+    fn default() -> Self {
+        OpndMode::Invalid
+    }
+}
+
+impl OpndMode {
+    fn new(mode: usize) -> Self {
+        let modes = [Self::Pos, Self::Imm];
+        if mode > modes.len() {
+            panic!("illegal opnd mode {}", mode);
+        }
+        modes[mode]
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Intcode(Vec<usize>);
 
@@ -30,21 +69,28 @@ impl Intcode {
         let prog = &mut self.0;
         let nprog = prog.len();
 
-        // Give a more comprehensible panic rather than an
-        // array bounds panic.
-        let check_range = |loc| {
-            if loc >= nprog {
-                panic!("operand out of range");
+        let fetch = |prog: &Vec<usize>, opnd, mode| match mode {
+            OpndMode::Invalid => unreachable!("invalid fetch mode"),
+            OpndMode::Imm => opnd,
+            OpndMode::Pos => {
+                if opnd >= nprog {
+                    panic!("fetch out of range");
+                }
+                prog[opnd]
             }
-            loc
         };
 
-        // Our opcodes are implemented by functions that
-        // perform the operations.
-        type Op = &'static dyn Fn(usize, usize) -> usize;
-        let add: Op = &|a, b| a + b;
-        let mul: Op = &|a, b| a * b;
-        let ops = [add, mul];
+        let store = |prog: &mut Vec<usize>, opnd, mode, val| match mode
+        {
+            OpndMode::Invalid => unreachable!("invalid store mode"),
+            OpndMode::Imm => panic!("immediate-mode store"),
+            OpndMode::Pos => {
+                if opnd >= nprog {
+                    panic!("store out of range");
+                }
+                prog[opnd] = val;
+            }
+        };
 
         // The actual emulator loop tries to be careful in
         // its checking.
@@ -54,14 +100,30 @@ impl Intcode {
                 panic!("program ran off end");
             }
             let opcode = prog[ip];
-            if opcode < 1 || opcode > ops.len() + 1 {
-                panic!("illegal opcode {} at {}", opcode, ip);
+            let op = Opcode::new(opcode % 100);
+            let mut modebits = opcode / 100;
+            let mut modes = [OpndMode::default(); 3];
+            for m in &mut modes {
+                *m = OpndMode::new(modebits % 10);
+                modebits /= 10;
             }
-            let op = ops[opcode - 1];
-            let src1 = check_range(prog[ip + 1]);
-            let src2 = check_range(prog[ip + 2]);
-            let dst = check_range(prog[ip + 3]);
-            prog[dst] = op(prog[src1], prog[src2]);
+            if modebits > 0 {
+                panic!(
+                    "illegal bits in instruction {:x} at {}",
+                    opcode, ip
+                );
+            }
+            match op {
+                Opcode::Add | Opcode::Mul => {
+                    let src1 = fetch(prog, prog[ip + 1], modes[0]);
+                    let src2 = fetch(prog, prog[ip + 2], modes[1]);
+                    let a = match op {
+                        Opcode::Add => src1 + src2,
+                        Opcode::Mul => src1 * src2,
+                    };
+                    store(prog, prog[ip + 3], modes[2], a);
+                }
+            }
             ip += 4;
         }
     }
