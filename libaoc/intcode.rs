@@ -6,21 +6,30 @@
 //! `input()` to load input values; `run()` to run until
 //! halted; `output()` to get the output value.
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Opcode {
     Add,
     Mul,
     Input,
     Output,
+    JumpIfTrue,
+    JumpIfFalse,
+    LessThan,
+    Equals,
 }
 
 impl Opcode {
     fn new(code: usize) -> (Self, usize) {
+        use Opcode::*;
         let codes = [
-            (Self::Add, 3),
-            (Self::Mul, 3),
-            (Self::Input, 1),
-            (Self::Output, 1),
+            (Add, 3),
+            (Mul, 3),
+            (Input, 1),
+            (Output, 1),
+            (JumpIfTrue, 2),
+            (JumpIfFalse, 2),
+            (LessThan, 3),
+            (Equals, 3),
         ];
         if code == 0 || code > codes.len() {
             panic!("illegal opcode {}", code);
@@ -165,21 +174,24 @@ impl Intcode {
             }
             let opcode = prog[ip] as usize;
             let (op, nargs) = Opcode::new(opcode % 100);
+            use Opcode::*;
             match op {
-                Opcode::Add | Opcode::Mul => {
+                Add | Mul | LessThan | Equals => {
                     assert_eq!(nargs, 3);
                     let mut modes = OpndModes::new(opcode, nargs);
                     let src1 = fetch(prog, ip + 1, &mut modes);
                     let src2 = fetch(prog, ip + 2, &mut modes);
                     let a = match op {
-                        Opcode::Add => src1 + src2,
-                        Opcode::Mul => src1 * src2,
-                        _ => unreachable!("wrong insn for add / mul"),
+                        Add => src1 + src2,
+                        Mul => src1 * src2,
+                        LessThan => (src1 < src2) as i64,
+                        Equals => (src1 == src2) as i64,
+                        _ => unreachable!("wrong insn for ALU"),
                     };
                     store(prog, ip + 3, &mut modes, a);
                     modes.end();
                 },
-                Opcode::Input => {
+                Input => {
                     assert_eq!(nargs, 1);
                     let mut modes = OpndModes::new(opcode, nargs);
                     let inputs = self.inputs.as_mut().expect("input was never provided");
@@ -187,12 +199,31 @@ impl Intcode {
                     store(prog, ip + 1, &mut modes, input);
                     modes.end();
                 },
-                Opcode::Output => {
+                Output => {
                     assert_eq!(nargs, 1);
                     let mut modes = OpndModes::new(opcode, nargs);
                     let output = fetch(prog, ip + 1, &mut modes);
-                    self.outputs.push(output);
                     modes.end();
+                    self.outputs.push(output);
+                },
+                JumpIfTrue | JumpIfFalse => {
+                    assert_eq!(nargs, 2);
+                    let mut modes = OpndModes::new(opcode, nargs);
+                    let test = fetch(prog, ip + 1, &mut modes);
+                    let target = fetch(prog, ip + 2, &mut modes);
+                    modes.end();
+                    let test = match op {
+                        JumpIfTrue => test != 0,
+                        JumpIfFalse => test == 0,
+                        _ => unreachable!("wrong insn for jump"),
+                    };
+                    if test {
+                        if target < 0 || target as usize > nprog {
+                            panic!("jump target out of range");
+                        }
+                        ip = target as usize;
+                        continue;
+                    }
                 },
             }
             ip += nargs + 1;
@@ -211,9 +242,9 @@ impl Intcode {
     }
 }
 
-// The test examples given in the problem.
+// The test examples given in the Day 2 problem.
 #[test]
-fn test_run() {
+fn test_day02() {
     // We generally want whatever rustfmt does in our code.
     // In this case it gows things up trying to be clever.
     // So we tell it "no".
@@ -247,3 +278,55 @@ fn test_run() {
         assert_eq!(init.prog, fin);
     }
 }
+
+// The test examples given in the Day 5 problem.
+// Picked some inputs and outputs to try.
+#[test]
+fn test_day05() {
+    #[rustfmt::skip]
+    let testcases: &[(&[i64], &[(i64, i64)])] = &[
+        (
+            &[3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8],
+            &[(8, 1), (9, 0)],
+        ),
+        (
+            &[3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8],
+            &[(7, 1), (8, 0), (9, 0)],
+        ),
+        (
+            &[3, 3, 1108, -1, 8, 3, 4, 3, 99],
+            &[(8, 1), (9, 0)],
+        ),
+        (
+            &[3, 3, 1107, -1, 8, 3, 4, 3, 99],
+            &[(7, 1), (8, 0), (9, 0)],
+        ),
+        (
+            &[3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9],
+            &[(0, 0), (9, 1)],
+        ),
+        (
+            &[3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1],
+            &[(0, 0), (9, 1)],
+        ),
+        (
+            &[
+                3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107,
+                8, 21, 20, 1006, 20, 31, 1106, 0, 36, 98, 0,
+                0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46,
+                104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4,
+                20, 1105, 1, 46, 98, 99,
+            ],
+            &[(6, 999), (8, 1000), (9, 1001)],
+        ),
+    ];
+    for (init, io) in testcases {
+        for &(input, output) in io.iter() {
+            let mut init = Intcode::new(init.to_vec()).with_inputs(vec![input]);
+            init.run();
+            assert_eq!(init.view_outputs(), &[output]);
+        }
+    }
+}
+
+
