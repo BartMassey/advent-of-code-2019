@@ -24,14 +24,41 @@ impl Opcode {
 
 #[derive(Clone, Copy)]
 enum OpndMode {
-    Invalid,
     Imm,
     Pos,
 }
 
-impl Default for OpndMode {
-    fn default() -> Self {
-        OpndMode::Invalid
+struct OpndModes {
+    modebits: usize,
+    count: usize,
+}
+
+impl OpndModes {
+    fn new(opcode: usize, count: usize) -> Self {
+        Self { modebits: opcode / 100, count }
+    }
+
+    fn end(&self) {
+        if self.modebits != 0 {
+            panic!("extra mode bits in operand mode");
+        }
+        if self.count != 0 {
+            panic!("unused operand modes");
+        }
+    }
+}
+
+impl Iterator for OpndModes {
+    type Item = OpndMode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.count == 0 {
+            panic!("missing operand mode");
+        }
+        self.count -= 1;
+        let mode = OpndMode::new(self.modebits % 10);
+        self.modebits /= 10;
+        Some(mode)
     }
 }
 
@@ -69,26 +96,35 @@ impl Intcode {
         let prog = &mut self.0;
         let nprog = prog.len();
 
-        let fetch = |prog: &Vec<usize>, opnd, mode| match mode {
-            OpndMode::Invalid => unreachable!("invalid fetch mode"),
-            OpndMode::Imm => opnd,
-            OpndMode::Pos => {
-                if opnd >= nprog {
-                    panic!("fetch out of range");
+        let fetch = |prog: &Vec<usize>, idx, modes: &mut OpndModes| {
+            if idx > nprog {
+                panic!("fetch off program end");
+            }
+            let opnd = prog[idx];
+            match modes.next().unwrap() {
+                OpndMode::Imm => opnd,
+                OpndMode::Pos => {
+                    if opnd >= nprog {
+                        panic!("fetch out of range");
+                    }
+                    prog[opnd]
                 }
-                prog[opnd]
             }
         };
 
-        let store = |prog: &mut Vec<usize>, opnd, mode, val| match mode
-        {
-            OpndMode::Invalid => unreachable!("invalid store mode"),
-            OpndMode::Imm => panic!("immediate-mode store"),
-            OpndMode::Pos => {
-                if opnd >= nprog {
-                    panic!("store out of range");
+        let store = |prog: &mut Vec<usize>, idx, modes: &mut OpndModes, val| {
+            if idx > nprog {
+                panic!("store off program end");
+            }
+            let opnd = prog[idx];
+            match modes.next().unwrap() {
+                OpndMode::Imm => panic!("immediate-mode store"),
+                OpndMode::Pos => {
+                    if opnd >= nprog {
+                        panic!("store out of range");
+                    }
+                    prog[opnd] = val;
                 }
-                prog[opnd] = val;
             }
         };
 
@@ -101,27 +137,17 @@ impl Intcode {
             }
             let opcode = prog[ip];
             let op = Opcode::new(opcode % 100);
-            let mut modebits = opcode / 100;
-            let mut modes = [OpndMode::default(); 3];
-            for m in &mut modes {
-                *m = OpndMode::new(modebits % 10);
-                modebits /= 10;
-            }
-            if modebits > 0 {
-                panic!(
-                    "illegal bits in instruction {:x} at {}",
-                    opcode, ip
-                );
-            }
             match op {
                 Opcode::Add | Opcode::Mul => {
-                    let src1 = fetch(prog, prog[ip + 1], modes[0]);
-                    let src2 = fetch(prog, prog[ip + 2], modes[1]);
+                    let mut modes = OpndModes::new(opcode, 3);
+                    let src1 = fetch(prog, ip + 1, &mut modes);
+                    let src2 = fetch(prog, ip + 2, &mut modes);
                     let a = match op {
                         Opcode::Add => src1 + src2,
                         Opcode::Mul => src1 * src2,
                     };
-                    store(prog, prog[ip + 3], modes[2], a);
+                    store(prog, ip + 3, &mut modes, a);
+                    modes.end();
                 }
             }
             ip += 4;
