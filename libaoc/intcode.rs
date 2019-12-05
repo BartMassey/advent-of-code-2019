@@ -51,7 +51,10 @@ struct OpndModes {
 
 impl OpndModes {
     fn new(opcode: usize, count: usize) -> Self {
-        Self { modebits: opcode / 100, count }
+        Self {
+            modebits: opcode / 100,
+            count,
+        }
     }
 
     fn end(&self) {
@@ -89,7 +92,7 @@ impl OpndMode {
 }
 
 #[derive(Debug, Clone)]
-pub struct Intcode{
+pub struct Intcode {
     prog: Vec<i64>,
     inputs: Option<Vec<i64>>,
     outputs: Vec<i64>,
@@ -97,7 +100,11 @@ pub struct Intcode{
 
 impl Intcode {
     fn new(prog: Vec<i64>) -> Self {
-        Self { prog, inputs: None, outputs: Vec::new() }
+        Self {
+            prog,
+            inputs: None,
+            outputs: Vec::new(),
+        }
     }
 
     /// Builder for adding user inputs to the Intcode
@@ -149,21 +156,22 @@ impl Intcode {
             }
         };
 
-        let store = |prog: &mut Vec<i64>, idx, modes: &mut OpndModes, val| {
-            if idx > nprog {
-                panic!("store off program end");
-            }
-            let opnd = prog[idx];
-            match modes.next().unwrap() {
-                OpndMode::Imm => panic!("immediate-mode store"),
-                OpndMode::Pos => {
-                    if opnd < 0 || opnd as usize >= nprog {
-                        panic!("store out of range");
-                    }
-                    prog[opnd as usize] = val;
+        let store =
+            |prog: &mut Vec<i64>, idx, modes: &mut OpndModes, val| {
+                if idx > nprog {
+                    panic!("store off program end");
                 }
-            }
-        };
+                let opnd = prog[idx];
+                match modes.next().unwrap() {
+                    OpndMode::Imm => panic!("immediate-mode store"),
+                    OpndMode::Pos => {
+                        if opnd < 0 || opnd as usize >= nprog {
+                            panic!("store out of range");
+                        }
+                        prog[opnd as usize] = val;
+                    }
+                }
+            };
 
         // The actual emulator loop tries to be careful in
         // its checking.
@@ -190,22 +198,26 @@ impl Intcode {
                     };
                     store(prog, ip + 3, &mut modes, a);
                     modes.end();
-                },
+                }
                 Input => {
                     assert_eq!(nargs, 1);
                     let mut modes = OpndModes::new(opcode, nargs);
-                    let inputs = self.inputs.as_mut().expect("input was never provided");
-                    let input = inputs.pop().expect("input without value");
+                    let inputs = self
+                        .inputs
+                        .as_mut()
+                        .expect("input was never provided");
+                    let input =
+                        inputs.pop().expect("input without value");
                     store(prog, ip + 1, &mut modes, input);
                     modes.end();
-                },
+                }
                 Output => {
                     assert_eq!(nargs, 1);
                     let mut modes = OpndModes::new(opcode, nargs);
                     let output = fetch(prog, ip + 1, &mut modes);
                     modes.end();
                     self.outputs.push(output);
-                },
+                }
                 JumpIfTrue | JumpIfFalse => {
                     assert_eq!(nargs, 2);
                     let mut modes = OpndModes::new(opcode, nargs);
@@ -224,7 +236,7 @@ impl Intcode {
                         ip = target as usize;
                         continue;
                     }
-                },
+                }
             }
             ip += nargs + 1;
         }
@@ -322,7 +334,8 @@ fn test_day05() {
     ];
     for (init, io) in testcases {
         for &(input, output) in io.iter() {
-            let mut init = Intcode::new(init.to_vec()).with_inputs(vec![input]);
+            let mut init =
+                Intcode::new(init.to_vec()).with_inputs(vec![input]);
             init.run();
             assert_eq!(init.view_outputs(), &[output]);
         }
