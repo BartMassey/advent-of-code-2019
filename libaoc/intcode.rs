@@ -109,7 +109,7 @@ impl Intcode {
     }
 
     /// View outputs from the Intcode program after running.
-    pub fn view_outputs<'a>(&'a self) -> &'a [i64] {
+    pub fn view_outputs(&self) -> &[i64] {
         &self.outputs
     }
 
@@ -328,5 +328,3 @@ fn test_day05() {
         }
     }
 }
-
-
