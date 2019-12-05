@@ -13,8 +13,8 @@ enum Opcode {
 }
 
 impl Opcode {
-    fn new(code: usize) -> Self {
-        let codes = [Self::Add, Self::Mul];
+    fn new(code: usize) -> (Self, usize) {
+        let codes = [(Self::Add, 3), (Self::Mul, 3)];
         if code == 0 || code > codes.len() {
             panic!("illegal opcode {}", code);
         }
@@ -73,7 +73,7 @@ impl OpndMode {
 }
 
 #[derive(Debug, Clone)]
-pub struct Intcode(Vec<usize>);
+pub struct Intcode(Vec<isize>);
 
 impl Intcode {
     /// Read and parse the program from stdin in the
@@ -96,7 +96,7 @@ impl Intcode {
         let prog = &mut self.0;
         let nprog = prog.len();
 
-        let fetch = |prog: &Vec<usize>, idx, modes: &mut OpndModes| {
+        let fetch = |prog: &Vec<isize>, idx, modes: &mut OpndModes| {
             if idx > nprog {
                 panic!("fetch off program end");
             }
@@ -104,15 +104,15 @@ impl Intcode {
             match modes.next().unwrap() {
                 OpndMode::Imm => opnd,
                 OpndMode::Pos => {
-                    if opnd >= nprog {
+                    if opnd < 0 || opnd as usize >= nprog {
                         panic!("fetch out of range");
                     }
-                    prog[opnd]
+                    prog[opnd as usize]
                 }
             }
         };
 
-        let store = |prog: &mut Vec<usize>, idx, modes: &mut OpndModes, val| {
+        let store = |prog: &mut Vec<isize>, idx, modes: &mut OpndModes, val| {
             if idx > nprog {
                 panic!("store off program end");
             }
@@ -120,10 +120,10 @@ impl Intcode {
             match modes.next().unwrap() {
                 OpndMode::Imm => panic!("immediate-mode store"),
                 OpndMode::Pos => {
-                    if opnd >= nprog {
+                    if opnd < 0 || opnd as usize >= nprog {
                         panic!("store out of range");
                     }
-                    prog[opnd] = val;
+                    prog[opnd as usize] = val;
                 }
             }
         };
@@ -132,14 +132,15 @@ impl Intcode {
         // its checking.
         let mut ip = 0;
         while ip < nprog && prog[ip] != 99 {
-            if ip + 3 > nprog {
+            if ip >= nprog {
                 panic!("program ran off end");
             }
-            let opcode = prog[ip];
-            let op = Opcode::new(opcode % 100);
+            let opcode = prog[ip] as usize;
+            let (op, nargs) = Opcode::new(opcode % 100);
             match op {
                 Opcode::Add | Opcode::Mul => {
-                    let mut modes = OpndModes::new(opcode, 3);
+                    assert_eq!(nargs, 3);
+                    let mut modes = OpndModes::new(opcode, nargs);
                     let src1 = fetch(prog, ip + 1, &mut modes);
                     let src2 = fetch(prog, ip + 2, &mut modes);
                     let a = match op {
@@ -150,18 +151,18 @@ impl Intcode {
                     modes.end();
                 }
             }
-            ip += 4;
+            ip += nargs + 1;
         }
     }
 
-    // For 2019 Day 02, this is how you input values.
-    pub fn input(&mut self, v1: usize, v2: usize) {
-        self.0[1] = v1;
-        self.0[2] = v2;
+    /// Input a "verb" and "noun" before starting the program.
+    pub fn input(&mut self, verb: isize, noun: isize) {
+        self.0[1] = verb;
+        self.0[2] = noun;
     }
 
-    // For 2019 Day 02, this is the output value.
-    pub fn output(&self) -> usize {
+    /// Fetch output after running the program.
+    pub fn output(&self) -> isize {
         self.0[0]
     }
 }
@@ -173,7 +174,7 @@ fn test_run() {
     // In this case it gows things up trying to be clever.
     // So we tell it "no".
     #[rustfmt::skip]
-    let testcases: &[(&[usize], &[usize])] = &[
+    let testcases: &[(&[isize], &[isize])] = &[
         (
             &[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50],
             &[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
