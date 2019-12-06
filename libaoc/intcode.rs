@@ -16,20 +16,24 @@ enum Opcode {
     JumpIfFalse,
     LessThan,
     Equals,
+    Halt,
 }
 
 impl Opcode {
-    fn new(code: usize) -> (Self, usize) {
+    fn new(code: usize) -> Self {
         use Opcode::*;
+        if code == 99 {
+            return Halt;
+        }
         let codes = [
-            (Add, 3),
-            (Mul, 3),
-            (Input, 1),
-            (Output, 1),
-            (JumpIfTrue, 2),
-            (JumpIfFalse, 2),
-            (LessThan, 3),
-            (Equals, 3),
+            Add,
+            Mul,
+            Input,
+            Output,
+            JumpIfTrue,
+            JumpIfFalse,
+            LessThan,
+            Equals,
         ];
         if code == 0 || code > codes.len() {
             panic!("illegal opcode {}", code);
@@ -44,43 +48,6 @@ enum OpndMode {
     Pos,
 }
 
-struct OpndModes {
-    modebits: usize,
-    count: usize,
-}
-
-impl OpndModes {
-    fn new(opcode: usize, count: usize) -> Self {
-        Self {
-            modebits: opcode / 100,
-            count,
-        }
-    }
-
-    fn end(&self) {
-        if self.modebits != 0 {
-            panic!("extra mode bits in operand mode");
-        }
-        if self.count != 0 {
-            panic!("unused operand modes");
-        }
-    }
-}
-
-impl Iterator for OpndModes {
-    type Item = OpndMode;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.count == 0 {
-            panic!("missing operand mode");
-        }
-        self.count -= 1;
-        let mode = OpndMode::new(self.modebits % 10);
-        self.modebits /= 10;
-        Some(mode)
-    }
-}
-
 impl OpndMode {
     fn new(mode: usize) -> Self {
         let modes = [Self::Pos, Self::Imm];
@@ -88,6 +55,85 @@ impl OpndMode {
             panic!("illegal opnd mode {}", mode);
         }
         modes[mode]
+    }
+}
+
+struct Decode<'a> {
+    prog: &'a mut Vec<i64>,
+    index: usize,
+    modebits: usize,
+}
+
+impl<'a> Decode<'a> {
+    fn new(prog: &'a mut Vec<i64>, index: usize) -> (Opcode, Self) {
+        let opcode = prog[index] as usize;
+        let op = Opcode::new(opcode % 100);
+        let modebits = opcode / 100;
+        (
+            op,
+            Self {
+                prog,
+                modebits,
+                index: index + 1,
+            },
+        )
+    }
+
+    // XXX Ugly copy-paste here that is awkward to get rid of.
+
+    fn fetch(&mut self) -> i64 {
+        let nprog = self.prog.len();
+        let mode = self.modebits % 10;
+        if self.index > nprog {
+            panic!("fetch off end");
+        }
+        let opnd = self.prog[self.index];
+        let val = match OpndMode::new(mode) {
+            OpndMode::Imm => opnd,
+            OpndMode::Pos => {
+                if opnd < 0 || opnd as usize > nprog {
+                    panic!("fetch position out of range");
+                }
+                self.prog[opnd as usize]
+            }
+        };
+        self.modebits /= 10;
+        self.index += 1;
+        val
+    }
+
+    fn store(&mut self, val: i64) {
+        let nprog = self.prog.len();
+        let mode = self.modebits % 10;
+        if self.index > nprog {
+            panic!("store off end");
+        }
+        let opnd = self.prog[self.index];
+        match OpndMode::new(mode) {
+            OpndMode::Imm => {
+                panic!("store to immediate");
+            }
+            OpndMode::Pos => {
+                if opnd < 0 || opnd as usize > nprog {
+                    panic!("store position out of range");
+                }
+                self.prog[opnd as usize] = val;
+            }
+        }
+        self.modebits /= 10;
+        self.index += 1;
+    }
+
+    fn skip(&mut self) {
+        self.modebits /= 10;
+        self.index += 1;
+    }
+
+    fn finish(self) -> usize {
+        if self.modebits != 0 {
+            panic!("unused mode bits");
+        }
+        self.index
     }
 }
 
@@ -140,55 +186,17 @@ impl Intcode {
         let prog = &mut self.prog;
         let nprog = prog.len();
 
-        let fetch = |prog: &Vec<i64>, idx, modes: &mut OpndModes| {
-            if idx > nprog {
-                panic!("fetch off program end");
-            }
-            let opnd = prog[idx];
-            match modes.next().unwrap() {
-                OpndMode::Imm => opnd,
-                OpndMode::Pos => {
-                    if opnd < 0 || opnd as usize >= nprog {
-                        panic!("fetch out of range");
-                    }
-                    prog[opnd as usize]
-                }
-            }
-        };
-
-        let store =
-            |prog: &mut Vec<i64>, idx, modes: &mut OpndModes, val| {
-                if idx > nprog {
-                    panic!("store off program end");
-                }
-                let opnd = prog[idx];
-                match modes.next().unwrap() {
-                    OpndMode::Imm => panic!("immediate-mode store"),
-                    OpndMode::Pos => {
-                        if opnd < 0 || opnd as usize >= nprog {
-                            panic!("store out of range");
-                        }
-                        prog[opnd as usize] = val;
-                    }
-                }
-            };
-
         // The actual emulator loop tries to be careful in
         // its checking.
-        let mut ip = 0;
-        while ip < nprog && prog[ip] != 99 {
-            if ip >= nprog {
-                panic!("program ran off end");
-            }
-            let opcode = prog[ip] as usize;
-            let (op, nargs) = Opcode::new(opcode % 100);
+        let mut ip: usize = 0;
+        while ip < nprog {
+            let (op, mut opnds) = Decode::new(prog, ip);
             use Opcode::*;
-            match op {
+            ip = match op {
+                Halt => return,
                 Add | Mul | LessThan | Equals => {
-                    assert_eq!(nargs, 3);
-                    let mut modes = OpndModes::new(opcode, nargs);
-                    let src1 = fetch(prog, ip + 1, &mut modes);
-                    let src2 = fetch(prog, ip + 2, &mut modes);
+                    let src1 = opnds.fetch();
+                    let src2 = opnds.fetch();
                     let a = match op {
                         Add => src1 + src2,
                         Mul => src1 * src2,
@@ -196,50 +204,45 @@ impl Intcode {
                         Equals => (src1 == src2) as i64,
                         _ => unreachable!("wrong insn for ALU"),
                     };
-                    store(prog, ip + 3, &mut modes, a);
-                    modes.end();
+                    opnds.store(a);
+                    opnds.finish()
                 }
                 Input => {
-                    assert_eq!(nargs, 1);
-                    let mut modes = OpndModes::new(opcode, nargs);
                     let inputs = self
                         .inputs
                         .as_mut()
                         .expect("input was never provided");
                     let input =
                         inputs.pop().expect("input without value");
-                    store(prog, ip + 1, &mut modes, input);
-                    modes.end();
+                    opnds.store(input);
+                    opnds.finish()
                 }
                 Output => {
-                    assert_eq!(nargs, 1);
-                    let mut modes = OpndModes::new(opcode, nargs);
-                    let output = fetch(prog, ip + 1, &mut modes);
-                    modes.end();
+                    let output = opnds.fetch();
                     self.outputs.push(output);
+                    opnds.finish()
                 }
                 JumpIfTrue | JumpIfFalse => {
-                    assert_eq!(nargs, 2);
-                    let mut modes = OpndModes::new(opcode, nargs);
-                    let test = fetch(prog, ip + 1, &mut modes);
-                    let target = fetch(prog, ip + 2, &mut modes);
-                    modes.end();
+                    let test = opnds.fetch();
                     let test = match op {
                         JumpIfTrue => test != 0,
                         JumpIfFalse => test == 0,
                         _ => unreachable!("wrong insn for jump"),
                     };
                     if test {
+                        let target = opnds.fetch();
                         if target < 0 || target as usize > nprog {
                             panic!("jump target out of range");
                         }
-                        ip = target as usize;
-                        continue;
+                        target as usize
+                    } else {
+                        opnds.skip();
+                        opnds.finish()
                     }
                 }
             }
-            ip += nargs + 1;
         }
+        panic!("program ran off end");
     }
 
     /// Day 2: Input a "verb" and "noun" before starting the program.
