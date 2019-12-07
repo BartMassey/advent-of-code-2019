@@ -15,7 +15,7 @@ pub fn main() {
     };
     let mut prog = aoc::Intcode::read().with_inputs(vec![input]);
     prog.run();
-    let outputs = prog.view_outputs();
+    let outputs = prog.collect_outputs();
     match part {
         Part1 => {
             assert_eq!(&outputs[..9], &[0, 0, 0, 0, 0, 0, 0, 0, 0]);
