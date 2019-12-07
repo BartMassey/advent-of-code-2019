@@ -145,7 +145,7 @@ pub struct Intcode {
 }
 
 impl Intcode {
-    fn new(prog: Vec<i64>) -> Self {
+    pub fn new(prog: Vec<i64>) -> Self {
         Self {
             prog,
             inputs: None,
@@ -155,8 +155,9 @@ impl Intcode {
 
     /// Builder for adding user inputs to the Intcode
     /// program before running. Can only be done once.
-    pub fn with_inputs(mut self, inputs: Vec<i64>) -> Self {
+    pub fn with_inputs(mut self, mut inputs: Vec<i64>) -> Self {
         assert!(self.inputs.is_none());
+        inputs.reverse();
         self.inputs = Some(inputs);
         self
     }
