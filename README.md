@@ -8,6 +8,19 @@ a fantastic exercise, and I thank the author and others
 involved profusely for their excellent work. Thanks also to
 `relsqui` for pointing me at this back in 2015.
 
+## Previously
+
+* [2018](http://gitlab.com/BartMassey/advent-of-code-2018)
+  in Javascript (incomplete)
+* [2017](http://gitlab.com/BartMassey/advent-of-code-2017)
+  in Go
+* [2016](http://github.com/BartMassey/advent-of-code-2016)
+  in Rust
+* [2015](http://github.com/BartMassey/advent-of-code-2015)
+  in Haskell
+
+## Organization
+
 The solutions are in directories named `day01` through
 `day25`. For each solution, I have included cleaned-up Rust
 code. There is a `README.md` in every problem directory
@@ -19,6 +32,8 @@ posterity.
 The solutions load library code from the included `libaoc`
 crate. See its documentation for details.
 
+## Code Quality
+
 There are no special system tests written for this code
 other than the ones provided as part of the problem ---
 there are occasional unit tests. I regard passing both parts
@@ -27,6 +42,8 @@ wrong about this in the past. More tests should get written.
 
 These programs are not production-quality: it is considered
 acceptable to panic on erroneous input.
+
+## Goals
 
 The goals of these solutions are to:
 
@@ -40,7 +57,9 @@ As always I expect to learn some Rust and a little bit of
 software engineering I should already have known writing
 these.
 
-There's also some engineering infrastructure in the form of
+## Infrastructure
+
+There's some engineering infrastructure here in the form of
 the `template` directory and the `mkday.sh` and
 `process-aoc.sh` shell scripts.  These speed each day's
 setup considerably. At the beginning of each day I `sh
@@ -58,6 +77,8 @@ times.sh` (will build before timing). This also verifies
 that everything runs.  You can use `sh clean.sh` to run
 `cargo clean` in the day directories — Rust `target`
 directories are huge.
+
+## Misc
 
 These solutions deserve a much more thorough top-level
 description than I usually have the energy to
