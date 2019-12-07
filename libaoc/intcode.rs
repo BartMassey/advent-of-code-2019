@@ -6,6 +6,7 @@
 //! `input()` to load input values; `run()` to run until
 //! halted; `output()` to get the output value.
 
+// Possible opcodes.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Opcode {
     Add,
@@ -20,6 +21,8 @@ enum Opcode {
 }
 
 impl Opcode {
+    // Make an opcode from a numeric code, checking for
+    // validity.
     fn new(code: usize) -> Self {
         use Opcode::*;
         if code == 99 {
@@ -42,6 +45,7 @@ impl Opcode {
     }
 }
 
+// Mode for operand fetch / store.
 #[derive(Clone, Copy)]
 enum OpndMode {
     Imm,
@@ -49,6 +53,8 @@ enum OpndMode {
 }
 
 impl OpndMode {
+    // Make a new operand mode from a number, checking for
+    // validity.
     fn new(mode: usize) -> Self {
         let modes = [Self::Pos, Self::Imm];
         if mode > modes.len() {
@@ -58,6 +64,8 @@ impl OpndMode {
     }
 }
 
+// Iterator-like object for fetching / storing successive
+// arguments of an instruction.
 struct Decode<'a> {
     prog: &'a mut Vec<i64>,
     index: usize,
@@ -65,6 +73,9 @@ struct Decode<'a> {
 }
 
 impl<'a> Decode<'a> {
+    // Decode an instruction. Returns the `Opcode` and
+    // itself as an iterator that will be used on successive
+    // operands.
     fn new(prog: &'a mut Vec<i64>, index: usize) -> (Opcode, Self) {
         let opcode = prog[index] as usize;
         let op = Opcode::new(opcode % 100);
@@ -79,8 +90,11 @@ impl<'a> Decode<'a> {
         )
     }
 
-    // XXX Ugly copy-paste here that is awkward to get rid of.
-
+    // Treat the current instruction operand as a fetch and
+    // get the value.
+    //
+    // XXX Ugly copy-paste of this code below that is
+    // awkward to get rid of.
     fn fetch(&mut self) -> i64 {
         let nprog = self.prog.len();
         let mode = self.modebits % 10;
@@ -102,6 +116,8 @@ impl<'a> Decode<'a> {
         val
     }
 
+    // Treat the current instruction operand as a store and
+    // store the value.
     fn store(&mut self, val: i64) {
         let nprog = self.prog.len();
         let mode = self.modebits % 10;
@@ -124,11 +140,17 @@ impl<'a> Decode<'a> {
         self.index += 1;
     }
 
+    // Skip the current operand. This is used, for example,
+    // for jumps not taken.
     fn skip(&mut self) {
         self.modebits /= 10;
         self.index += 1;
     }
 
+    // Check that there are not remaining unconsumed modes
+    // (would probably indicate a number-of-arguments error)
+    // and then return the index one past the end of this
+    // instruction.
     fn finish(self) -> usize {
         if self.modebits != 0 {
             panic!("unused mode bits");
@@ -137,34 +159,56 @@ impl<'a> Decode<'a> {
     }
 }
 
+/// This is returned by `Intcode::run()` to indicate why it
+/// stopped.
+#[derive(Debug, Clone)]
+pub enum Terminus {
+    /// Program executed a `Halt` instruction.
+    Halted,
+    /// Program executed an `Input` instruction with
+    /// no inputs buffered.
+    NeedInput,
+    /// Program executed an `Output` instruction with the
+    /// given value.
+    HaveOutput(i64),
+}
+
+/// An Intcode program. It has an input buffer for
+/// preloading inputs, and saves its current instruction
+/// pointer when suspending for input or output (and when
+/// halted, although this is less useful.)
 #[derive(Debug, Clone)]
 pub struct Intcode {
     prog: Vec<i64>,
-    inputs: Option<Vec<i64>>,
-    outputs: Vec<i64>,
+    inputs: Vec<i64>,
+    ip: usize,
 }
 
 impl Intcode {
+    /// Make a new intcode program from the given vector of
+    /// instructions.
     pub fn new(prog: Vec<i64>) -> Self {
         Self {
             prog,
-            inputs: None,
-            outputs: Vec::new(),
+            inputs: Vec::new(),
+            ip: 0,
         }
     }
 
-    /// Builder for adding user inputs to the Intcode
-    /// program before running. Can only be done once.
-    pub fn with_inputs(mut self, mut inputs: Vec<i64>) -> Self {
-        assert!(self.inputs.is_none());
-        inputs.reverse();
-        self.inputs = Some(inputs);
+    /// Builder for adding user inputs to the `Intcode`
+    /// program before running.
+    pub fn with_inputs(mut self, inputs: Vec<i64>) -> Self {
+        self.inputs.reverse();
+        self.inputs.extend_from_slice(&inputs);
+        self.inputs.reverse();
         self
     }
 
-    /// View outputs from the Intcode program after running.
-    pub fn view_outputs(&self) -> &[i64] {
-        &self.outputs
+    /// Add an input to the Intcode program while running.
+    pub fn add_input(&mut self, input: i64) {
+        self.inputs.reverse();
+        self.inputs.push(input);
+        self.inputs.reverse();
     }
 
     /// Read and parse the program from stdin in the
@@ -182,19 +226,23 @@ impl Intcode {
         Self::new(prog)
     }
 
-    /// Run this Intcode program.
-    pub fn run(&mut self) {
+    /// Run this Intcode program until it suspends. Returns
+    /// the cause of suspension.
+    pub fn run(&mut self) -> Terminus {
         let prog = &mut self.prog;
         let nprog = prog.len();
 
         // The actual emulator loop tries to be careful in
         // its checking.
-        let mut ip: usize = 0;
+        let mut ip: usize = self.ip;
         while ip < nprog {
             let (op, mut opnds) = Decode::new(prog, ip);
             use Opcode::*;
             ip = match op {
-                Halt => return,
+                Halt => {
+                    self.ip = ip;
+                    return Terminus::Halted;
+                }
                 Add | Mul | LessThan | Equals => {
                     let src1 = opnds.fetch();
                     let src2 = opnds.fetch();
@@ -209,19 +257,20 @@ impl Intcode {
                     opnds.finish()
                 }
                 Input => {
-                    let inputs = self
-                        .inputs
-                        .as_mut()
-                        .expect("input was never provided");
+                    if self.inputs.is_empty() {
+                        self.ip = ip;
+                        return Terminus::NeedInput;
+                    }
                     let input =
-                        inputs.pop().expect("input without value");
+                        self.inputs.pop().expect("input without value");
                     opnds.store(input);
                     opnds.finish()
                 }
                 Output => {
                     let output = opnds.fetch();
-                    self.outputs.push(output);
-                    opnds.finish()
+                    ip = opnds.finish();
+                    self.ip = ip;
+                    return Terminus::HaveOutput(output);
                 }
                 JumpIfTrue | JumpIfFalse => {
                     let test = opnds.fetch();
@@ -244,6 +293,24 @@ impl Intcode {
             }
         }
         panic!("program ran off end");
+    }
+
+    /// Keep running the program until it halts, collecting
+    /// any outputs produced along the way. Return them all.
+    ///
+    /// # Panics
+    /// Will panic if program stops to request input.
+    pub fn collect_outputs(&mut self) -> Vec<i64> {
+        let mut outputs = Vec::new();
+        loop {
+            match self.run() {
+                Terminus::Halted => return outputs,
+                Terminus::HaveOutput(out) => outputs.push(out),
+                Terminus::NeedInput => {
+                    panic!("output collection stopped for input")
+                }
+            }
+        }
     }
 
     /// Day 2: Input a "verb" and "noun" before starting the program.
@@ -340,8 +407,7 @@ fn test_day05() {
         for &(input, output) in io.iter() {
             let mut init =
                 Intcode::new(init.to_vec()).with_inputs(vec![input]);
-            init.run();
-            assert_eq!(init.view_outputs(), &[output]);
+            assert_eq!(init.collect_outputs(), vec![output]);
         }
     }
 }
