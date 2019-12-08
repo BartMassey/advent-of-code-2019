@@ -4,3 +4,4 @@ target/
 part1.md
 part2.md
 input.txt
+!Cargo.lock
