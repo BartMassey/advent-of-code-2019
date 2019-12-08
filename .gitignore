@@ -1,2 +1,6 @@
 target/
+/.year
 .day
+part1.md
+part2.md
+input.txt

@@ -15,6 +15,16 @@ then
     exit 1
 fi
 
+YEARFILE=".year"
+if [ -s $YEARFILE ]
+then
+    YEAR=`cat $YEARFILE`
+else
+    YEAR=`date +'%Y'`
+    echo $YEAR > $YEARFILE
+    echo "mkday: set year to $YEAR" >&2
+fi
+
 DAYFILE=".day"
 if [ $# -gt 0 ]
 then
@@ -64,7 +74,7 @@ fi
 cd template
 for f in *
 do
-    sed "s=<day>=$DAYSTR=g" <$f >../$DAY/$f
+    sed -e "s=<day>=$DAYSTR=g" -e "s=<year>=$YEAR=g" <$f >../$DAY/$f
 done
 
 cd ../$DAY

@@ -3,7 +3,7 @@
 // for license terms.
 
 //! Advent of Code Day <day>.  
-//! Bart Massey 2019
+//! Bart Massey <year>
 
 pub fn main() {
     let part = aoc::get_part();

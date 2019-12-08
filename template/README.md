@@ -1,7 +1,12 @@
-# Advent of Code 2019: Day <day>
+# Advent of Code <year>: Day <day>
 Bart Massey
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/<year>/day/<day>).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt
