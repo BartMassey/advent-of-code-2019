@@ -14,16 +14,17 @@ pub fn main() {
         Part2 => 5,
     };
     let mut prog = aoc::Intcode::read().with_inputs(vec![input]);
-    prog.run();
     let outputs = prog.collect_outputs();
+    let last = outputs.len() - 1;
     match part {
         Part1 => {
-            assert_eq!(&outputs[..9], &[0, 0, 0, 0, 0, 0, 0, 0, 0]);
-            println!("{}", outputs[9]);
+            for q in &outputs[..last] {
+                assert_eq!(*q, 0);
+            }
+            println!("{}", outputs[last]);
         }
         Part2 => {
-            assert_eq!(outputs.len(), 1);
-            println!("{}", outputs[0]);
+            println!("{:?}", outputs[last]);
         }
     }
 }
