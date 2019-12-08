@@ -5,26 +5,30 @@
 //! Advent of Code Day 5.  
 //! Bart Massey 2019
 
-use aoc::Part::*;
+use aoc::Terminus::*;
 
 pub fn main() {
+    let mut prog = aoc::Intcode::read();
     let part = aoc::get_part();
-    let input = match part {
-        Part1 => 1,
-        Part2 => 5,
-    };
-    let mut prog = aoc::Intcode::read().with_inputs(vec![input]);
-    let outputs = prog.collect_outputs();
-    let last = outputs.len() - 1;
     match part {
-        Part1 => {
-            for q in &outputs[..last] {
-                assert_eq!(*q, 0);
+        aoc::Part1 => {
+            prog.add_input(1);
+            while let HaveOutput(q) = prog.run() {
+                if q != 0 {
+                    println!("{}", q);
+                    return;
+                }
             }
-            println!("{}", outputs[last]);
+            panic!("program did not produce nonzero code");
         }
-        Part2 => {
-            println!("{:?}", outputs[last]);
+        aoc::Part2 => {
+            prog.add_input(5);
+            match prog.run() {
+                HaveOutput(q) => println!("{}", q),
+                result => {
+                    panic!("unexpected program result {:?}", result)
+                }
+            }
         }
     }
 }
