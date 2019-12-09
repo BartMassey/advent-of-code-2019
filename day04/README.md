@@ -20,7 +20,12 @@ these, I will simple paste the given input into a text file
 manually; it works better with my machinery and is more
 consistent.
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt

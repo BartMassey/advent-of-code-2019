@@ -5,7 +5,12 @@ Already struggling with these — not sure how many days I'll
 do this year. Made a lot of fiddly mistakes, but caught them
 before submitting because Rust encourages testing.
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt

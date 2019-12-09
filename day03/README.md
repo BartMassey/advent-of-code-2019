@@ -16,7 +16,12 @@ writing the thing imperatively. I was pretty confident of
 correctness when the compiler accepted my code, and my tests
 passed on the first try, so there was that.
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt

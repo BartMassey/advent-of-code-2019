@@ -19,7 +19,12 @@ today. Didn't feel like writing this one myself.
 There's some functions-as-values in my code today. That
 said, I would love to generalize some of the types more…
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt

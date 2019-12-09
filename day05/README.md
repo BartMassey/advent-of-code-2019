@@ -13,7 +13,12 @@ fancy array of op functions back into a big `match`.
 I hope the next few days aren't quite so much tedious
 typing.
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt

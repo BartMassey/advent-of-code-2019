@@ -8,7 +8,12 @@ I'm sure we'll be seeing this new emulator again and again.
 I tried to make it portable, as it will surely move into
 `libaoc` soon.
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt

@@ -26,7 +26,12 @@ This is the first problem I have used a nonstandard
 third-party crate on: the problem really cried out for
 multisets and I didn't see any reason to write my own.
 
-Run with
+---
+
+Solution to
+[this problem](https://adventofcode.com/2019/day/).
+
+Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
     cargo run --release 2 <input.txt
