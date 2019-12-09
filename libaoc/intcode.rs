@@ -9,15 +9,16 @@
 // Possible opcodes.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Opcode {
-    Add,
-    Mul,
-    Input,
-    Output,
-    JumpIfTrue,
-    JumpIfFalse,
-    LessThan,
-    Equals,
-    Halt,
+    Add = 0,
+    Mul = 1,
+    Input = 2,
+    Output = 3,
+    JumpIfTrue = 4,
+    JumpIfFalse = 5,
+    LessThan = 6,
+    Equals = 7,
+    Halt = 8,
+    RBO = 9,
 }
 
 impl Opcode {
@@ -37,6 +38,7 @@ impl Opcode {
             JumpIfFalse,
             LessThan,
             Equals,
+            RBO,
         ];
         if code == 0 || code > codes.len() {
             panic!("illegal opcode {}", code);
@@ -46,17 +48,18 @@ impl Opcode {
 }
 
 // Mode for operand fetch / store.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OpndMode {
     Imm,
     Pos,
+    Rel,
 }
 
 impl OpndMode {
     // Make a new operand mode from a number, checking for
     // validity.
     fn new(mode: usize) -> Self {
-        let modes = [Self::Pos, Self::Imm];
+        let modes = [Self::Pos, Self::Imm, Self::Rel];
         if mode > modes.len() {
             panic!("illegal opnd mode {}", mode);
         }
@@ -70,13 +73,18 @@ struct Decode<'a> {
     prog: &'a mut Vec<i64>,
     index: usize,
     modebits: usize,
+    rel_base: i64,
 }
 
 impl<'a> Decode<'a> {
     // Decode an instruction. Returns the `Opcode` and
     // itself as an iterator that will be used on successive
     // operands.
-    fn new(prog: &'a mut Vec<i64>, index: usize) -> (Opcode, Self) {
+    fn new(
+        prog: &'a mut Vec<i64>,
+        index: usize,
+        rel_base: i64,
+    ) -> (Opcode, Self) {
         let opcode = prog[index] as usize;
         let op = Opcode::new(opcode % 100);
         let modebits = opcode / 100;
@@ -86,6 +94,7 @@ impl<'a> Decode<'a> {
                 prog,
                 modebits,
                 index: index + 1,
+                rel_base,
             },
         )
     }
@@ -98,15 +107,22 @@ impl<'a> Decode<'a> {
     fn fetch(&mut self) -> i64 {
         let nprog = self.prog.len();
         let mode = self.modebits % 10;
-        if self.index > nprog {
-            panic!("fetch off end");
+        if self.index >= nprog {
+            self.prog.resize(self.index + 1, 0);
         }
-        let opnd = self.prog[self.index];
-        let val = match OpndMode::new(mode) {
+        let mut opnd = self.prog[self.index];
+        let mode = OpndMode::new(mode);
+        let val = match mode {
             OpndMode::Imm => opnd,
-            OpndMode::Pos => {
-                if opnd < 0 || opnd as usize > nprog {
+            OpndMode::Pos | OpndMode::Rel => {
+                if mode == OpndMode::Rel {
+                    opnd += self.rel_base;
+                }
+                if opnd < 0 {
                     panic!("fetch position out of range");
+                }
+                if opnd as usize >= nprog {
+                    self.prog.resize(opnd as usize + 1, 0);
                 }
                 self.prog[opnd as usize]
             }
@@ -121,17 +137,24 @@ impl<'a> Decode<'a> {
     fn store(&mut self, val: i64) {
         let nprog = self.prog.len();
         let mode = self.modebits % 10;
-        if self.index > nprog {
-            panic!("store off end");
+        if self.index >= nprog {
+            self.prog.resize(self.index + 1, 0);
         }
-        let opnd = self.prog[self.index];
-        match OpndMode::new(mode) {
+        let mut opnd = self.prog[self.index];
+        let mode = OpndMode::new(mode);
+        match mode {
             OpndMode::Imm => {
                 panic!("store to immediate");
             }
-            OpndMode::Pos => {
-                if opnd < 0 || opnd as usize > nprog {
+            OpndMode::Pos | OpndMode::Rel => {
+                if mode == OpndMode::Rel {
+                    opnd += self.rel_base;
+                }
+                if opnd < 0 {
                     panic!("store position out of range");
+                }
+                if opnd as usize >= nprog {
+                    self.prog.resize(opnd as usize + 1, 0);
                 }
                 self.prog[opnd as usize] = val;
             }
@@ -182,6 +205,7 @@ pub struct Intcode {
     prog: Vec<i64>,
     inputs: Vec<i64>,
     ip: usize,
+    rel_base: i64,
 }
 
 impl Intcode {
@@ -192,6 +216,7 @@ impl Intcode {
             prog,
             inputs: Vec::new(),
             ip: 0,
+            rel_base: 0,
         }
     }
 
@@ -236,7 +261,7 @@ impl Intcode {
         // its checking.
         let mut ip: usize = self.ip;
         while ip < nprog {
-            let (op, mut opnds) = Decode::new(prog, ip);
+            let (op, mut opnds) = Decode::new(prog, ip, self.rel_base);
             use Opcode::*;
             ip = match op {
                 Halt => {
@@ -281,7 +306,7 @@ impl Intcode {
                     };
                     if test {
                         let target = opnds.fetch();
-                        if target < 0 || target as usize > nprog {
+                        if target < 0 {
                             panic!("jump target out of range");
                         }
                         target as usize
@@ -289,6 +314,11 @@ impl Intcode {
                         opnds.skip();
                         opnds.finish()
                     }
+                }
+                RBO => {
+                    let offset = opnds.fetch();
+                    self.rel_base += offset;
+                    opnds.finish()
                 }
             }
         }
@@ -409,5 +439,31 @@ fn test_day05() {
                 Intcode::new(init.to_vec()).with_inputs(vec![input]);
             assert_eq!(init.collect_outputs(), vec![output]);
         }
+    }
+}
+
+// Test Examples from the Day 9 problem.
+#[test]
+fn test_day09() {
+    let code = vec![
+        109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006,
+        101, 0, 99,
+    ];
+    let mut prog = Intcode::new(code.clone());
+    let outputs = prog.collect_outputs();
+    assert_eq!(code, outputs);
+
+    let code = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
+    let mut prog = Intcode::new(code);
+    match prog.run() {
+        Terminus::HaveOutput(q) => assert_eq!(q.to_string().len(), 16),
+        _ => panic!("test failed with no output"),
+    }
+
+    let code = vec![104, 1125899906842624, 99];
+    let mut prog = Intcode::new(code.clone());
+    match prog.run() {
+        Terminus::HaveOutput(q) => assert_eq!(q, code[1]),
+        _ => panic!("test failed with no output"),
     }
 }
