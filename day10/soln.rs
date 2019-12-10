@@ -292,7 +292,7 @@ pub fn main() {
         aoc::Part1 => println!("{}", nvis),
         aoc::Part2 => {
             let (x, y) = nth_vaporized(&map, origin, 200);
-            println!("{:?}", x * 100 + y);
+            println!("{}", x * 100 + y);
         }
     }
 }
