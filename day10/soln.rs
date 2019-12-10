@@ -164,7 +164,7 @@ fn nth_vaporized(map: &Map, origin: Coord, mut n: usize) -> Coord {
     // distance.  This allows popping the nearest off the
     // end.  (A priority queue would be slightly more
     // efficent than a `Vec` for Part 2, but less so for
-    // Part 2. So meh.)
+    // Part 1. So meh.)
     for v in aslopes.values_mut() {
         v.sort_by_key(|&c| {
             let (x, y) = coord_sub(c, origin);

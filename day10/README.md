@@ -21,6 +21,12 @@ up and the direction vector starting to the right. I spent
 way too long realizing that I had a bunch of cancelling
 screwups with this in my tests.
 
+Used the `ordered-float` crate to sort by angle. Every time
+I have to use that crate I feel dirty. Rust took a wrong
+turn long ago when it made `NaN` quiet by default. It's like
+using the type system to prevent division by zero: sounds
+good until you work with it for a while.
+
 Oh well. I'm sure tomorrow will be better.
 
 ---
