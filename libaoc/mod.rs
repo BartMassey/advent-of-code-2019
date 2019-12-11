@@ -37,3 +37,6 @@ pub use self::dirns::*;
 
 pub mod intcode;
 pub use self::intcode::*;
+
+pub mod render;
+pub use self::render::*;
