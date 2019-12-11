@@ -17,7 +17,7 @@
 //! let clip_box = GridBox::new(3, 4);
 //! let neighbors = clip_box.neighbors((2, 0))
 //!                 .collect::<Vec<_>>();
-//! assert_eq!(neighbors, vec![(2, 1), (1, 0)]);
+//! assert_eq!(neighbors, vec![(1, 0), (2, 1)]);
 //! ```
 
 /// Symbolic direction constants. It is unfortunate that
@@ -25,14 +25,23 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dirn {
     Up = 0,
-    Down = 1,
-    Left = 2,
+    Left = 1,
+    Down = 2,
     Right = 3,
+}
+
+/// Rotation directions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rot {
+    /// Counter-clockwise.
+    CCW,
+    /// Clockwise.
+    CW,
 }
 
 /// The cardinal directions: up, down, left, right in
 /// an x-y coordinate system where increasing y is down.
-pub static DIRNS: [(i64, i64); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)];
+pub static DIRNS: [(i64, i64); 4] = [(0, -1), (-1, 0), (0, 1), (1, 0)];
 
 impl Dirn {
     /// Displacement resulting from a step in the given
@@ -40,6 +49,28 @@ impl Dirn {
     pub fn disp(self) -> (i64, i64) {
         DIRNS[self as usize]
     }
+
+    /// Direction resulting from turning in the given
+    /// rotation direction.
+    pub fn turn(self, rot: Rot) -> Dirn {
+        use Dirn::*;
+        const FACINGS: [Dirn; 4] = [Up, Left, Down, Right];
+        let offset = match rot {
+            Rot::CCW => 1,
+            Rot::CW => FACINGS.len() - 1,
+        };
+        FACINGS[(self as usize + offset) % FACINGS.len()]
+    }
+}
+
+#[test]
+fn test_rot() {
+    use Dirn::*;
+    use Rot::*;
+    assert_eq!(Left, Up.turn(CCW));
+    assert_eq!(Right, Up.turn(CW));
+    assert_eq!(Down, Left.turn(CCW));
+    assert_eq!(Down, Right.turn(CW));
 }
 
 /// Type of coordinates.
