@@ -40,3 +40,6 @@ pub use self::intcode::*;
 
 pub mod render;
 pub use self::render::*;
+
+pub mod numberfns;
+pub use self::numberfns::*;
