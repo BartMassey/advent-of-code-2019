@@ -36,35 +36,6 @@ where
     map
 }
 
-/// The GCD is not part of standard Rust. We don't need
-/// super-efficiency, so we just use the faster form of the
-/// [Euclidean
-/// Algorithm](https://en.wikipedia.org/wiki/Euclidean_algorithm#Procedure).
-fn gcd(a: i64, b: i64) -> i64 {
-    let mut a = a.abs();
-    let mut b = b.abs();
-    while b != 0 {
-        let t = b;
-        b = a % b;
-        a = t;
-    }
-    a
-}
-
-// The GCD is worth testing on its own.
-#[test]
-fn test_gcd() {
-    assert_eq!(0, gcd(0, 0));
-    assert_eq!(1, gcd(1, 0));
-    assert_eq!(1, gcd(0, 1));
-    assert_eq!(5, gcd(5, 0));
-    assert_eq!(5, gcd(0, 5));
-    assert_eq!(1, gcd(3, 5));
-    assert_eq!(2, gcd(2, 4));
-    assert_eq!(2, gcd(4, 2));
-    assert_eq!(3, gcd(9, 12));
-}
-
 /// This is the heart of the computation for this week.
 /// Compute a "reduced slope" as a *run, rise* pair but
 /// divided by their GCD. This is what the problem
@@ -72,7 +43,7 @@ fn test_gcd() {
 /// slope.
 fn int_slope((dx, dy): Coord) -> Coord {
     assert!(dx != 0 || dy != 0);
-    let q = gcd(dx.abs(), dy.abs());
+    let q = aoc::gcd(dx.abs(), dy.abs());
     (dx / q, dy / q)
 }
 
