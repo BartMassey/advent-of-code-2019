@@ -20,7 +20,9 @@ Solution to
 Save your problem input to `input.txt` and run with
 
     cargo run --release 1 <input.txt
-    cargo run --release 2 <input.txt
+    cargo run --release 2 <input.txt >/dev/null
+
+(or wherever you want your rendered image to go).
 
 ---
 
