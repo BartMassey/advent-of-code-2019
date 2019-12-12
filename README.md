@@ -76,7 +76,8 @@ You can get times for all parts of all days with `sh
 times.sh` (will build before timing). This also verifies
 that everything runs.  You can use `sh clean.sh` to run
 `cargo clean` in the day directories — Rust `target`
-directories are huge.
+directories are huge. Use the `-a` flag to also clean in
+`libaoc`.
 
 ## Misc
 
