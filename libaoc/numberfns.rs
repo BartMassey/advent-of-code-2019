@@ -53,3 +53,15 @@ fn test_lcm() {
     assert_eq!(60, lcm(20, 6));
     assert_eq!(100, lcm(25, 4));
 }
+
+/// Returns -1, 0 or 1 as the input is negative, zero or
+/// positive.
+pub fn sgn(x: i64) -> i64 {
+    if x > 0 {
+        return 1;
+    }
+    if x < 0 {
+        return -1;
+    }
+    0
+}
