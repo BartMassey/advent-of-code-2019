@@ -343,23 +343,20 @@ impl Intcode {
         }
     }
 
+    /// Retrieve the value at the given address.
+    ///
+    /// # Panics
+    /// Will panic if address is out of range.
     pub fn peek(&mut self, addr: usize) -> i64 {
         self.prog[addr]
     }
 
+    /// Poke the given value into the given address.
+    ///
+    /// # Panics
+    /// Will panic if address is out of range.
     pub fn poke(&mut self, addr: usize, val: i64) {
         self.prog[addr] = val;
-    }
-
-    /// Day 2: Input a "verb" and "noun" before starting the program.
-    pub fn input(&mut self, verb: i64, noun: i64) {
-        self.prog[1] = verb;
-        self.prog[2] = noun;
-    }
-
-    /// Day 2: Fetch output after running the program.
-    pub fn output(&self) -> i64 {
-        self.prog[0]
     }
 }
 
