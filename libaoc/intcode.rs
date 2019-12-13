@@ -343,6 +343,14 @@ impl Intcode {
         }
     }
 
+    pub fn peek(&mut self, addr: usize) -> i64 {
+        self.prog[addr]
+    }
+
+    pub fn poke(&mut self, addr: usize, val: i64) {
+        self.prog[addr] = val;
+    }
+
     /// Day 2: Input a "verb" and "noun" before starting the program.
     pub fn input(&mut self, verb: i64, noun: i64) {
         self.prog[1] = verb;
