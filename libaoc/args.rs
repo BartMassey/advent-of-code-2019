@@ -19,6 +19,16 @@ pub enum Part {
 }
 pub use Part::*;
 
+impl Part {
+    fn new(part: usize) -> Self {
+        match part {
+            1 => Part1,
+            2 => Part2,
+            _ => panic!("unknown part argument {}", part),
+        }
+    }
+}
+
 /// Find out whether we're handling part 1 or part 2.
 /// Fail if extra arguments are passed.
 pub fn get_part() -> Part {
@@ -29,16 +39,12 @@ pub fn get_part() -> Part {
         .expect("get_part: bad part argument")
         .parse()
         .expect("get_part: part argument is not a number");
-    match part {
-        1 => Part1,
-        2 => Part2,
-        _ => panic!("unknown part argument {}", part),
-    }
+    Part::new(part)
 }
 
 /// Find out whether we're handling part 1 or part 2, and what
 /// other arguments have been supplied.
-pub fn get_part_args() -> (usize, Vec<String>) {
+pub fn get_part_args() -> (Part, Vec<String>) {
     let mut argv = std::env::args();
     assert!(argv.len() >= 2);
     let part = argv
@@ -46,9 +52,8 @@ pub fn get_part_args() -> (usize, Vec<String>) {
         .expect("get_part_args: bad part argument")
         .parse()
         .expect("get_part_args: part argument is not a number");
-    assert!(part == 1 || part == 2);
     let args = argv.collect::<Vec<String>>();
-    (part, args)
+    (Part::new(part), args)
 }
 
 /// Get just arguments for a problem where both parts are the same
