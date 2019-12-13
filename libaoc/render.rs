@@ -5,7 +5,7 @@
 
 //! Map rendering for Advent of Code solutions.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Compute the bounding box of a set of coordinates. The
 /// max coordinate values of the box are the max coordinate
@@ -44,6 +44,39 @@ where
             } else {
                 result.push(' ');
             }
+        }
+        result.push('\n');
+    }
+    result
+}
+
+/// Render a `HashMap` as an ASCII map.  The resulting
+/// string will have characters at coordinate locations
+/// represented in the map as defined by the rendering
+/// function, and the default character elsewhere. Each line
+/// including the last will be terminated by a newline.
+pub fn render_map<H, F>(
+    map: &HashMap<(i64, i64), i64, H>,
+    mut render: F,
+    default: char,
+) -> String
+where
+    H: std::hash::BuildHasher,
+    F: FnMut(i64) -> char,
+{
+    let posns: HashSet<(i64, i64)> = map.keys().cloned().collect();
+    let ((min_x, min_y), (max_x, max_y)) = bounding_box(&posns);
+    let width = (max_x + 1 - min_x) as usize;
+    let height = (max_y + 1 - min_y) as usize;
+    let mut result = String::with_capacity((width + 1) * height);
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
+            let t = map.get(&(x, y));
+            let ch = match t {
+                Some(t) => render(*t),
+                None => default,
+            };
+            result.push(ch);
         }
         result.push('\n');
     }
