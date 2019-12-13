@@ -12,17 +12,19 @@ pub fn main() {
     let mut prog = Intcode::read();
     match part {
         aoc::Part1 => {
-            prog.input(12, 2);
+            prog.poke(1, 12);
+            prog.poke(2, 2);
             prog.run();
-            println!("{}", prog.output());
+            println!("{}", prog.peek(0));
         }
         aoc::Part2 => {
             for noun in 0..100 {
                 for verb in 0..100 {
                     let mut prog = prog.clone();
-                    prog.input(noun, verb);
+                    prog.poke(1, noun);
+                    prog.poke(2, verb);
                     prog.run();
-                    let result = prog.output();
+                    let result = prog.peek(0);
                     // It is clearer to use the text pasted
                     // directly from the web than to try to
                     // "format" it. Sorry Clippy.
