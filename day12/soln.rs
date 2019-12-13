@@ -9,6 +9,8 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use aoc::sgn;
+
 lazy_static! {
     /// Regular expression used for parsing the input.
     static ref POSN_RE: Regex =
@@ -26,18 +28,6 @@ struct State {
     posn: Point3,
     /// Planet velocity.
     vel: Point3,
-}
-
-/// Returns -1, 0 or 1 as the input is negative, zero or
-/// positive.
-fn sgn(x: i64) -> i64 {
-    if x > 0 {
-        return 1;
-    }
-    if x < 0 {
-        return -1;
-    }
-    0
 }
 
 /// Turn a collection of points into initial states by
