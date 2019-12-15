@@ -43,3 +43,6 @@ pub use self::render::*;
 
 pub mod numberfns;
 pub use self::numberfns::*;
+
+pub mod trace;
+pub use self::trace::*;

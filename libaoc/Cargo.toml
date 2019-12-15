@@ -20,3 +20,7 @@ path = "mod.rs"
 
 [dev-dependencies]
 rand = "0.3"
+
+[features]
+default = []
+trace = []
