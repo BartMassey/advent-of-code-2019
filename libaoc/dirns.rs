@@ -39,9 +39,14 @@ pub enum Rot {
     CW,
 }
 
-/// The cardinal directions: up, down, left, right in
-/// an x-y coordinate system where increasing y is down.
-pub static DIRNS: [(i64, i64); 4] = [(0, -1), (-1, 0), (0, 1), (1, 0)];
+/// Displacements induced by the cardinal directions: up,
+/// down, left, right in an x-y coordinate system where
+/// increasing y is down.
+pub const DIRNS: [(i64, i64); 4] = [(0, -1), (-1, 0), (0, 1), (1, 0)];
+
+/// The possible facings.
+pub const FACINGS: [Dirn; 4] =
+    [Dirn::Up, Dirn::Left, Dirn::Down, Dirn::Right];
 
 impl Dirn {
     /// Displacement resulting from a step in the given
@@ -53,8 +58,6 @@ impl Dirn {
     /// Direction resulting from turning in the given
     /// rotation direction.
     pub fn turn(self, rot: Rot) -> Dirn {
-        use Dirn::*;
-        const FACINGS: [Dirn; 4] = [Up, Left, Down, Right];
         let offset = match rot {
             Rot::CCW => 1,
             Rot::CW => FACINGS.len() - 1,
