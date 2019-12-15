@@ -55,6 +55,15 @@ impl Dirn {
         DIRNS[self as usize]
     }
 
+    /// Apply the appropriate displacement for
+    /// this direction to the given point.
+    pub fn displace(self, mut p: Point) -> Point {
+        let disp = self.disp();
+        p.0 += disp.0;
+        p.1 += disp.1;
+        p
+    }
+
     /// Direction resulting from turning in the given
     /// rotation direction.
     pub fn turn(self, rot: Rot) -> Dirn {
