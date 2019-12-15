@@ -64,6 +64,11 @@ impl Dirn {
         };
         FACINGS[(self as usize + offset) % FACINGS.len()]
     }
+
+    /// Direction resulting from turning around.
+    pub fn reverse(self) -> Dirn {
+        FACINGS[(self as usize + 2) % FACINGS.len()]
+    }
 }
 
 #[test]
