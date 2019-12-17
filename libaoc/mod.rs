@@ -46,6 +46,3 @@ pub use self::numberfns::*;
 
 pub mod trace;
 pub use self::trace::*;
-
-pub mod misc;
-pub use self::misc::*;

@@ -17,7 +17,7 @@ impl Digits {
     fn new(input: &str) -> Self {
         let digits = input
             .chars()
-            .map(|c| i64::from(aoc::digit_to_int(c)))
+            .map(|c| i64::from(c.to_digit(10).expect("non-digit")))
             .collect();
         Self(digits)
     }
