@@ -67,28 +67,6 @@ fn make_reaction_map(reactions: &[Reaction]) -> ReactionMap {
         .collect()
 }
 
-/// A "products list" is a table showing the needed
-/// amount of various components.
-struct Products(HashMap<String, u64>);
-
-impl Products {
-    /// Make a new empty products list.
-    fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-    /// Add some product demand to the product list.
-    fn add(&mut self, name: &str, quantity: u64) {
-        let entry = self.0.entry(name.to_string()).or_insert(0);
-        *entry += quantity;
-    }
-
-    /// Get the current demand for some product.
-    fn get(&mut self, name: &str) -> u64 {
-        *self.0.get(name).unwrap_or(&0)
-    }
-}
-
 /// Reactants need to be produced before product. If
 /// we traverse the components in product-to-input order
 /// we can compute what we need to.
@@ -109,6 +87,47 @@ fn reaction_order(reactions: &ReactionMap) -> ReactionOrder {
     assert_eq!("ORE", ro[0]);
     assert_eq!("FUEL", ro[nts - 1]);
     ro
+}
+
+
+/// A reaction schema contains the data necessary to run
+/// reactions.
+#[derive(Debug, Clone)]
+struct ReactionSchema {
+    map: ReactionMap,
+    order: ReactionOrder,
+}
+
+impl ReactionSchema {
+
+    /// Compile reactions into a schema.
+    fn new(reactions: &[Reaction]) -> Self {
+        let map = make_reaction_map(reactions);
+        let order = reaction_order(&map);
+        Self { map, order }
+    }
+}
+
+/// A "products list" is a table showing the needed
+/// amount of various components.
+struct Products(HashMap<String, u64>);
+
+impl Products {
+    /// Make a new empty products list.
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    /// Add some product demand to the product list.
+    fn add(&mut self, name: &str, quantity: u64) {
+        let entry = self.0.entry(name.to_string()).or_insert(0);
+        *entry += quantity;
+    }
+
+    /// Get the current demand for some product.
+    fn get(&mut self, name: &str) -> u64 {
+        *self.0.get(name).unwrap_or(&0)
+    }
 }
 
 // Tests from problem description.
@@ -198,27 +217,18 @@ const TESTS: &[(&[&str], u64, Option<u64>)] = &[
     ),
 ];
 
-#[test]
-fn test_reaction_order() {
-    for (test, _, _) in TESTS.iter() {
-        let reactions = parse_reactions(test.iter());
-        let _ = reaction_order(&reactions);
-    }
-}
-
 /// Compute the minimum amount of ore needed to produce the
 /// given amount of fuel using the given reactions.
-fn min_ore(reactions: &ReactionMap, fuel: u64) -> u64 {
+fn min_ore(reactions: &ReactionSchema, fuel: u64) -> u64 {
     let mut products = Products::new();
-    let ro = reaction_order(&reactions);
 
     // Traverse the products from output to input, recording
     // the new demand at each stage relative to the amount
     // of the output needed. There is no reaction that
     // produces ORE, so don't look for one.
     products.add("FUEL", fuel);
-    for target in ro.iter().skip(1).rev() {
-        let eqn = reactions.get(target).expect("no reaction found");
+    for target in reactions.order.iter().skip(1).rev() {
+        let eqn = reactions.map.get(target).expect("no reaction found");
         assert_eq!(&eqn.rhs.name, target);
         let need = products.get(target);
         let q = eqn.rhs.quantity;
@@ -236,20 +246,20 @@ fn min_ore(reactions: &ReactionMap, fuel: u64) -> u64 {
 }
 
 /// Take an iterator over lines describing reactions and
-/// produce a reaction map.
-fn parse_reactions<S>(lines: impl Iterator<Item = S>) -> ReactionMap
+/// produce a reaction schema.
+fn parse_reactions<S>(lines: impl Iterator<Item = S>) -> ReactionSchema
 where
     S: AsRef<str>,
 {
     let reactions: Vec<Reaction> = lines.map(Reaction::new).collect();
-    make_reaction_map(&reactions)
+    ReactionSchema::new(&reactions)
 }
 
 #[test]
 fn test_min_ore() {
     for (test, q, _) in TESTS.iter() {
-        let map = parse_reactions(test.iter());
-        assert_eq!(*q, min_ore(&map, 1));
+        let reactions = parse_reactions(test.iter());
+        assert_eq!(*q, min_ore(&reactions, 1));
     }
 }
 
@@ -257,7 +267,7 @@ fn test_min_ore() {
 /// given ore capacity using the given
 /// reactions. Fundamental strategy is binary search
 /// (suggested by folks on the Internet).
-fn max_fuel(reactions: &ReactionMap, ore_cap: u64) -> u64 {
+fn max_fuel(reactions: &ReactionSchema, ore_cap: u64) -> u64 {
     // Double fuel demand until ore capacity is exceeded.
     let mut upper = 1;
     while min_ore(reactions, upper) <= ore_cap {
@@ -288,18 +298,18 @@ const TRILLION: u64 = 1_000_000_000_000;
 fn test_max_fuel() {
     for (test, _, q) in TESTS.iter() {
         if let Some(q) = q {
-            let map = parse_reactions(test.iter());
-            assert_eq!(*q, max_fuel(&map, TRILLION));
+            let reactions = parse_reactions(test.iter());
+            assert_eq!(*q, max_fuel(&reactions, TRILLION));
         }
     }
 }
 
 pub fn main() {
     let lines = aoc::input_lines();
-    let map = parse_reactions(lines);
+    let reactions = parse_reactions(lines);
     let part = aoc::get_part();
     match part {
-        aoc::Part1 => println!("{}", min_ore(&map, 1)),
-        aoc::Part2 => println!("{}", max_fuel(&map, TRILLION)),
+        aoc::Part1 => println!("{}", min_ore(&reactions, 1)),
+        aoc::Part2 => println!("{}", max_fuel(&reactions, TRILLION)),
     }
 }
