@@ -16,7 +16,8 @@ I started to write that code.
 
 Then I lost the will to continue. It would have been at
 least another 1.5 hours, and I still haven't finished the
-persnickety Day 14 solution yet.
+persnickety Day 14 solution yet. (I eventually finished it,
+just for completionism, with a bunch of help on Part 2.)
 
 If I am going to do this again, it will be because there are
 nice problems every single night that a reasonably competent
